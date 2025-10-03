@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> | GoCotano</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <%- include('../partials/header') %>
+
+  <div class="container">
+    <!-- Restaurant Header -->
+    <div class="card" style="margin-bottom: 2rem;">
+      <div class="d-flex justify-between align-center">
+        <div>
+          <h1 style="color: var(--primary-blue); margin-bottom: 0.5rem;"><%= restaurant.name %></h1>
+          <p style="color: var(--gray); margin-bottom: 0.5rem;">
+            <%= restaurant.cuisine %> • <%= restaurant.address %>
+          </p>
+          <span class="restaurant-rating">⭐ <%= restaurant.rating.toFixed(1) %></span>
+          <span class="badge <%= restaurant.isOpen ? 'badge-success' : 'badge-pending' %>" style="margin-left: 1rem;">
+            <%= restaurant.isOpen ? 'Open Now' : 'Closed' %>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Menu Items -->
+    <h2 style="color: var(--primary-blue); margin-bottom: 1.5rem;">Menu</h2>
+
+    <% if (restaurant.menuItems && restaurant.menuItems.length > 0) { %>
+      <div id="cart-summary" style="display: none; position: fixed; bottom: 2rem; right: 2rem; background: var(--primary-orange); color: white; padding: 1rem 1.5rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); cursor: pointer; z-index: 999;">
+        <div id="cart-count">0 items</div>
+        <div id="cart-total" style="font-size: 1.25rem; font-weight: 700;">$0.00</div>
+      </div>
+
+      <% restaurant.menuItems.forEach(item => { %>
+        <div class="menu-item" data-item-id="<%= item.id %>" data-price="<%= item.price %>">
+          <img
+            src="<%= item.image || '/images/food-placeholder.jpg' %>"
+            alt="<%= item.name %>"
+            class="menu-item-image"
+            onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23FF9800%22 width=%22100%22 height=%22100%22/%3E%3Ctext fill=%22%23fff%22 font-size=%2212%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3E<%= item.name.substring(0,1) %>%3C/text%3E%3C/svg%3E'"
+          >
+          <div class="menu-item-info">
+            <h3 class="menu-item-name"><%= item.name %></h3>
+            <p class="menu-item-description"><%= item.description %></p>
+            <div class="d-flex justify-between align-center" style="margin-top: 0.5rem;">
+              <div class="menu-item-price">$<%= item.price.toFixed(2) %></div>
+              <% if (restaurant.isOpen) { %>
+                <div class="d-flex align-center gap-2">
+                  <button class="btn btn-secondary" onclick="updateQuantity(<%= item.id %>, -1)" style="padding: 0.5rem 0.75rem;">-</button>
+                  <span id="qty-<%= item.id %>" style="font-weight: 600; min-width: 2rem; text-align: center;">0</span>
+                  <button class="btn btn-primary" onclick="updateQuantity(<%= item.id %>, 1)" style="padding: 0.5rem 0.75rem;">+</button>
+                </div>
+              <% } else { %>
+                <span class="badge badge-pending">Unavailable</span>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+
+      <% if (restaurant.isOpen) { %>
+        <button id="checkout-btn" class="btn btn-primary w-100" style="margin-top: 2rem; padding: 1rem; font-size: 1.1rem; display: none;" onclick="proceedToCheckout()">
+          Proceed to Checkout
+        </button>
+      <% } %>
+    <% } else { %>
+      <div class="card text-center">
+        <p style="color: var(--gray); padding: 2rem;">No menu items available.</p>
+      </div>
+    <% } %>
+  </div>
+
+  <%- include('../partials/footer') %>
+
+  <script>
+    const cart = {};
+    const restaurantId = <%= restaurant.id %>;
+
+    function updateQuantity(itemId, change) {
+      if (!cart[itemId]) cart[itemId] = 0;
+      cart[itemId] += change;
+      if (cart[itemId] < 0) cart[itemId] = 0;
+
+      document.getElementById(`qty-${itemId}`).textContent = cart[itemId];
+      updateCartSummary();
+    }
+
+    function updateCartSummary() {
+      let totalItems = 0;
+      let totalPrice = 0;
+
+      Object.keys(cart).forEach(itemId => {
+        const qty = cart[itemId];
+        if (qty > 0) {
+          totalItems += qty;
+          const price = parseFloat(document.querySelector(`[data-item-id="${itemId}"]`).dataset.price);
+          totalPrice += qty * price;
+        }
+      });
+
+      const summary = document.getElementById('cart-summary');
+      const checkoutBtn = document.getElementById('checkout-btn');
+
+      if (totalItems > 0) {
+        summary.style.display = 'block';
+        checkoutBtn.style.display = 'block';
+        document.getElementById('cart-count').textContent = `${totalItems} item${totalItems > 1 ? 's' : ''}`;
+        document.getElementById('cart-total').textContent = `$${totalPrice.toFixed(2)}`;
+      } else {
+        summary.style.display = 'none';
+        checkoutBtn.style.display = 'none';
+      }
+    }
+
+    function proceedToCheckout() {
+      const items = [];
+      Object.keys(cart).forEach(itemId => {
+        if (cart[itemId] > 0) {
+          items.push({ menuItemId: parseInt(itemId), quantity: cart[itemId] });
+        }
+      });
+
+      localStorage.setItem('cartItems', JSON.stringify(items));
+      localStorage.setItem('restaurantId', restaurantId);
+      window.location.href = '/orders/checkout?restaurantId=' + restaurantId;
+    }
+
+    document.getElementById('cart-summary')?.addEventListener('click', proceedToCheckout);
+  </script>
+</body>
+</html>

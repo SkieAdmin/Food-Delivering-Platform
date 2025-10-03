@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> | GoCotano</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <%- include('partials/header') %>
+
+  <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+    <div class="container">
+      <div class="alert alert-error"><%= error %></div>
+    </div>
+  <% } %>
+
+  <% if (typeof success !== 'undefined' && success && success.length > 0) { %>
+    <div class="container">
+      <div class="alert alert-success"><%= success %></div>
+    </div>
+  <% } %>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <h1>Delicious Food, Delivered Fast</h1>
+      <p>Order from your favorite restaurants and track your delivery in real-time</p>
+      <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem;">
+        <a href="/restaurants" class="btn btn-primary" style="font-size: 1.1rem; padding: 1rem 2rem;">
+          Browse Restaurants
+        </a>
+        <a href="/register" class="btn btn-outline" style="font-size: 1.1rem; padding: 1rem 2rem;">
+          Sign Up Now
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Restaurants -->
+  <section class="container" style="margin-top: 3rem;">
+    <h2 style="text-align: center; color: var(--primary-blue); margin-bottom: 2rem;">
+      Featured Restaurants
+    </h2>
+
+    <% if (restaurants && restaurants.length > 0) { %>
+      <div class="grid grid-3">
+        <% restaurants.forEach(restaurant => { %>
+          <div class="restaurant-card">
+            <img
+              src="/images/restaurant-placeholder.jpg"
+              alt="<%= restaurant.name %>"
+              class="restaurant-image"
+              onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22200%22%3E%3Crect fill=%22%234FC3F7%22 width=%22400%22 height=%22200%22/%3E%3Ctext fill=%22%23fff%22 font-size=%2224%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3E<%= restaurant.name %>%3C/text%3E%3C/svg%3E'"
+            >
+            <div class="restaurant-info">
+              <h3 class="restaurant-name"><%= restaurant.name %></h3>
+              <p class="restaurant-cuisine">
+                <%= restaurant.cuisine %> • <%= restaurant.address %>
+              </p>
+              <div class="d-flex justify-between align-center" style="margin-top: 1rem;">
+                <span class="restaurant-rating">⭐ <%= restaurant.rating.toFixed(1) %></span>
+                <span class="badge <%= restaurant.isOpen ? 'badge-success' : 'badge-pending' %>">
+                  <%= restaurant.isOpen ? 'Open' : 'Closed' %>
+                </span>
+              </div>
+              <a href="/restaurants/<%= restaurant.id %>" class="btn btn-primary w-100" style="margin-top: 1rem;">
+                View Menu
+              </a>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } else { %>
+      <div class="card text-center">
+        <p style="color: var(--gray); font-size: 1.1rem;">
+          No restaurants available at the moment. Check back soon!
+        </p>
+      </div>
+    <% } %>
+  </section>
+
+  <!-- How It Works -->
+  <section class="container" style="margin-top: 4rem;">
+    <h2 style="text-align: center; color: var(--primary-blue); margin-bottom: 2rem;">
+      How It Works
+    </h2>
+    <div class="grid grid-3">
+      <div class="card text-center">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+        <h3 style="color: var(--primary-orange); margin-bottom: 0.5rem;">Browse</h3>
+        <p style="color: var(--gray);">
+          Discover restaurants near you and explore their menus
+        </p>
+      </div>
+      <div class="card text-center">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🛒</div>
+        <h3 style="color: var(--primary-orange); margin-bottom: 0.5rem;">Order</h3>
+        <p style="color: var(--gray);">
+          Add items to cart and checkout securely with PayPal
+        </p>
+      </div>
+      <div class="card text-center">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">📍</div>
+        <h3 style="color: var(--primary-orange); margin-bottom: 0.5rem;">Track</h3>
+        <p style="color: var(--gray);">
+          Track your delivery in real-time on the map
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <%- include('partials/footer') %>
+
+  <script src="/js/main.js"></script>
+</body>
+</html>

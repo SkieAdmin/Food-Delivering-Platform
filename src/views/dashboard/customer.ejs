@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> | GoCotano</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <%- include('../partials/header') %>
+
+  <div class="container">
+    <h1 style="color: var(--primary-blue); margin-bottom: 2rem;">Customer Dashboard</h1>
+
+    <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+      <div class="alert alert-error"><%= error %></div>
+    <% } %>
+
+    <% if (typeof success !== 'undefined' && success && success.length > 0) { %>
+      <div class="alert alert-success"><%= success %></div>
+    <% } %>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value"><%= stats.totalOrders %></div>
+        <div class="stat-label">Total Orders</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value"><%= stats.activeOrders %></div>
+        <div class="stat-label">Active Orders</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value"><%= stats.completedOrders %></div>
+        <div class="stat-label">Completed Orders</div>
+      </div>
+    </div>
+
+    <!-- Recent Orders -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Recent Orders</h2>
+      </div>
+      <div class="card-body">
+        <% if (orders && orders.length > 0) { %>
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 2px solid var(--primary-blue-lighter);">
+                  <th style="padding: 1rem; text-align: left;">Order #</th>
+                  <th style="padding: 1rem; text-align: left;">Restaurant</th>
+                  <th style="padding: 1rem; text-align: left;">Items</th>
+                  <th style="padding: 1rem; text-align: left;">Total</th>
+                  <th style="padding: 1rem; text-align: left;">Status</th>
+                  <th style="padding: 1rem; text-align: left;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% orders.forEach(order => { %>
+                  <tr style="border-bottom: 1px solid #E0E0E0;">
+                    <td style="padding: 1rem;"><%= order.orderNumber %></td>
+                    <td style="padding: 1rem;"><%= order.restaurant.name %></td>
+                    <td style="padding: 1rem;"><%= order._count.orderItems %> items</td>
+                    <td style="padding: 1rem; font-weight: 600; color: var(--primary-orange);">
+                      $<%= order.totalAmount.toFixed(2) %>
+                    </td>
+                    <td style="padding: 1rem;">
+                      <span class="badge badge-<%= order.status === 'DELIVERED' ? 'success' : 'primary' %>">
+                        <%= order.status %>
+                      </span>
+                    </td>
+                    <td style="padding: 1rem;">
+                      <a href="/orders/<%= order.id %>" class="btn btn-secondary" style="padding: 0.5rem 1rem;">
+                        View
+                      </a>
+                    </td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        <% } else { %>
+          <p style="text-align: center; color: var(--gray); padding: 2rem;">
+            No orders yet. <a href="/restaurants" style="color: var(--primary-orange);">Browse restaurants</a>
+          </p>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <%- include('../partials/footer') %>
+</body>
+</html>

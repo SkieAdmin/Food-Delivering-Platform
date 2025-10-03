@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> | GoCotano</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <%- include('../partials/header') %>
+
+  <div class="container">
+    <h1 style="color: var(--primary-blue); margin-bottom: 2rem; text-align: center;">
+      All Restaurants
+    </h1>
+
+    <% if (restaurants && restaurants.length > 0) { %>
+      <div class="grid grid-3">
+        <% restaurants.forEach(restaurant => { %>
+          <div class="restaurant-card">
+            <img
+              src="/images/restaurant-placeholder.jpg"
+              alt="<%= restaurant.name %>"
+              class="restaurant-image"
+              onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22200%22%3E%3Crect fill=%22%234FC3F7%22 width=%22400%22 height=%22200%22/%3E%3Ctext fill=%22%23fff%22 font-size=%2224%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3E<%= restaurant.name %>%3C/text%3E%3C/svg%3E'"
+            >
+            <div class="restaurant-info">
+              <h3 class="restaurant-name"><%= restaurant.name %></h3>
+              <p class="restaurant-cuisine">
+                <%= restaurant.cuisine %> • <%= restaurant.address %>
+              </p>
+              <p style="color: var(--gray); font-size: 0.9rem;">
+                <%= restaurant._count.menuItems %> menu items
+              </p>
+              <div class="d-flex justify-between align-center" style="margin-top: 1rem;">
+                <span class="restaurant-rating">⭐ <%= restaurant.rating.toFixed(1) %></span>
+                <span class="badge <%= restaurant.isOpen ? 'badge-success' : 'badge-pending' %>">
+                  <%= restaurant.isOpen ? 'Open' : 'Closed' %>
+                </span>
+              </div>
+              <a href="/restaurants/<%= restaurant.id %>" class="btn btn-primary w-100" style="margin-top: 1rem;">
+                View Menu
+              </a>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } else { %>
+      <div class="card text-center">
+        <p style="color: var(--gray); font-size: 1.1rem; padding: 3rem;">
+          No restaurants available at the moment.
+        </p>
+      </div>
+    <% } %>
+  </div>
+
+  <%- include('../partials/footer') %>
+</body>
+</html>

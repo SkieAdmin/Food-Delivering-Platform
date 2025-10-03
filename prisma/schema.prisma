@@ -1,0 +1,156 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Users table with role-based access
+model User {
+  id            Int          @id @default(autoincrement())
+  email         String       @unique
+  password      String
+  phone         String       @unique
+  role          Role         @default(CUSTOMER)
+  isVerified    Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  // Relations
+  orders        Order[]
+  restaurant    Restaurant?
+  driver        Driver?
+  otpCodes      OtpCode[]
+}
+
+enum Role {
+  CUSTOMER
+  RESTAURANT
+  DRIVER
+  ADMIN
+}
+
+// OTP verification codes
+model OtpCode {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code        String
+  expiresAt   DateTime
+  verified    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+}
+
+// Restaurant details
+model Restaurant {
+  id          Int        @id @default(autoincrement())
+  name        String
+  address     String
+  latitude    Float
+  longitude   Float
+  cuisine     String
+  rating      Float      @default(0)
+  isOpen      Boolean    @default(true)
+  userId      Int        @unique
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  menuItems   MenuItem[]
+  orders      Order[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+// Menu items
+model MenuItem {
+  id            Int         @id @default(autoincrement())
+  name          String
+  description   String      @db.Text
+  price         Float
+  image         String?
+  available     Boolean     @default(true)
+  restaurantId  Int
+  restaurant    Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  orderItems    OrderItem[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+// Orders
+model Order {
+  id              Int           @id @default(autoincrement())
+  orderNumber     String        @unique
+  customerId      Int
+  customer        User          @relation(fields: [customerId], references: [id])
+  restaurantId    Int
+  restaurant      Restaurant    @relation(fields: [restaurantId], references: [id])
+  driverId        Int?
+  driver          Driver?       @relation(fields: [driverId], references: [id])
+  status          OrderStatus   @default(PENDING)
+  totalAmount     Float
+  deliveryAddress String
+  deliveryLat     Float
+  deliveryLng     Float
+  paymentId       String?
+  paymentStatus   PaymentStatus @default(PENDING)
+  orderItems      OrderItem[]
+  tracking        Tracking?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+// Order items
+model OrderItem {
+  id          Int       @id @default(autoincrement())
+  orderId     Int
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId  Int
+  menuItem    MenuItem  @relation(fields: [menuItemId], references: [id])
+  quantity    Int
+  price       Float
+}
+
+// Delivery drivers
+model Driver {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleType     String
+  vehicleNumber   String
+  isAvailable     Boolean   @default(true)
+  currentLat      Float?
+  currentLng      Float?
+  orders          Order[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// Real-time tracking
+model Tracking {
+  id              Int       @id @default(autoincrement())
+  orderId         Int       @unique
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  driverLat       Float?
+  driverLng       Float?
+  estimatedTime   Int?      // minutes
+  lastUpdated     DateTime  @default(now())
+}

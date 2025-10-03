@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> | GoCotano</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <%- include('../partials/header') %>
+
+  <div class="container">
+    <h1 style="color: var(--primary-blue); margin-bottom: 2rem;">My Orders</h1>
+
+    <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+      <div class="alert alert-error"><%= error %></div>
+    <% } %>
+
+    <% if (orders && orders.length > 0) { %>
+      <div class="grid grid-2">
+        <% orders.forEach(order => { %>
+          <div class="card">
+            <div class="d-flex justify-between align-center" style="margin-bottom: 1rem;">
+              <div>
+                <h3 style="color: var(--primary-blue); margin-bottom: 0.25rem;">
+                  Order #<%= order.orderNumber %>
+                </h3>
+                <p style="color: var(--gray); margin: 0;">
+                  <%= order.restaurant.name %>
+                </p>
+              </div>
+              <span class="badge badge-<%= order.status === 'DELIVERED' ? 'success' : 'primary' %>">
+                <%= order.status.replace(/_/g, ' ') %>
+              </span>
+            </div>
+
+            <div style="border-top: 1px solid var(--primary-blue-lighter); padding-top: 1rem; margin-top: 1rem;">
+              <div class="d-flex justify-between" style="margin-bottom: 0.5rem;">
+                <span style="color: var(--gray);">Items:</span>
+                <span style="font-weight: 600;"><%= order._count.orderItems %></span>
+              </div>
+              <div class="d-flex justify-between" style="margin-bottom: 0.5rem;">
+                <span style="color: var(--gray);">Total:</span>
+                <span style="font-weight: 700; color: var(--primary-orange); font-size: 1.1rem;">
+                  $<%= order.totalAmount.toFixed(2) %>
+                </span>
+              </div>
+              <div class="d-flex justify-between" style="margin-bottom: 1rem;">
+                <span style="color: var(--gray); font-size: 0.9rem;">
+                  <%= new Date(order.createdAt).toLocaleDateString() %>
+                </span>
+              </div>
+
+              <a href="/orders/<%= order.id %>" class="btn btn-primary w-100">
+                View Details
+              </a>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } else { %>
+      <div class="card text-center">
+        <div style="padding: 3rem;">
+          <div style="font-size: 4rem; margin-bottom: 1rem;">🍽️</div>
+          <h3 style="color: var(--primary-blue); margin-bottom: 1rem;">No Orders Yet</h3>
+          <p style="color: var(--gray); margin-bottom: 2rem;">
+            Looks like you haven't placed any orders yet. Start exploring our restaurants!
+          </p>
+          <a href="/restaurants" class="btn btn-primary">Browse Restaurants</a>
+        </div>
+      </div>
+    <% } %>
+  </div>
+
+  <%- include('../partials/footer') %>
+</body>
+</html>

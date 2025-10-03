@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> | GoCotano</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://maps.googleapis.com/maps/api/js?key=<%= process.env.GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY' %>"></script>
+</head>
+<body>
+  <%- include('../partials/header') %>
+
+  <div class="container" style="max-width: 900px;">
+    <h1 style="color: var(--primary-blue); margin-bottom: 2rem;">
+      Order #<%= order.orderNumber %>
+    </h1>
+
+    <div class="grid grid-2" style="gap: 2rem;">
+      <!-- Order Details -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Order Details</h2>
+        </div>
+        <div class="card-body">
+          <div style="margin-bottom: 1rem;">
+            <strong style="color: var(--primary-blue);">Restaurant:</strong><br>
+            <%= order.restaurant.name %>
+          </div>
+
+          <div style="margin-bottom: 1rem;">
+            <strong style="color: var(--primary-blue);">Delivery Address:</strong><br>
+            <%= order.deliveryAddress %>
+          </div>
+
+          <div style="margin-bottom: 1rem;">
+            <strong style="color: var(--primary-blue);">Status:</strong><br>
+            <span class="badge badge-<%= order.status === 'DELIVERED' ? 'success' : 'primary' %>" style="margin-top: 0.5rem;">
+              <%= order.status.replace(/_/g, ' ') %>
+            </span>
+          </div>
+
+          <div style="margin-bottom: 1rem;">
+            <strong style="color: var(--primary-blue);">Order Date:</strong><br>
+            <%= new Date(order.createdAt).toLocaleString() %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Items Ordered -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Items Ordered</h2>
+        </div>
+        <div class="card-body">
+          <% order.orderItems.forEach(item => { %>
+            <div class="d-flex justify-between" style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--primary-blue-lighter);">
+              <div>
+                <strong><%= item.menuItem.name %></strong><br>
+                <span style="color: var(--gray); font-size: 0.9rem;">Qty: <%= item.quantity %></span>
+              </div>
+              <div style="text-align: right;">
+                <strong style="color: var(--primary-orange);">$<%= (item.price * item.quantity).toFixed(2) %></strong>
+              </div>
+            </div>
+          <% }); %>
+
+          <div style="border-top: 2px solid var(--primary-blue); padding-top: 1rem; margin-top: 1rem;">
+            <div class="d-flex justify-between" style="font-size: 1.25rem; font-weight: 700; color: var(--primary-orange);">
+              <span>Total:</span>
+              <span>$<%= order.totalAmount.toFixed(2) %></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tracking Map -->
+    <% if (order.status === 'OUT_FOR_DELIVERY' && order.tracking) { %>
+      <div class="card" style="margin-top: 2rem;">
+        <div class="card-header">
+          <h2 class="card-title">🚗 Live Tracking</h2>
+        </div>
+        <div class="card-body">
+          <div id="tracking-map" class="map-container"></div>
+          <p style="text-align: center; color: var(--gray); margin-top: 1rem;">
+            Your delivery is on the way!
+            <% if (order.tracking.estimatedTime) { %>
+              Estimated time: <%= order.tracking.estimatedTime %> minutes
+            <% } %>
+          </p>
+        </div>
+      </div>
+
+      <script src="/socket.io/socket.io.js"></script>
+      <script>
+        const socket = io();
+        let map, driverMarker, destinationMarker;
+
+        function initMap() {
+          const destination = {
+            lat: <%= order.deliveryLat %>,
+            lng: <%= order.deliveryLng %>
+          };
+
+          map = new google.maps.Map(document.getElementById('tracking-map'), {
+            center: destination,
+            zoom: 14
+          });
+
+          destinationMarker = new google.maps.Marker({
+            position: destination,
+            map: map,
+            title: 'Delivery Location',
+            icon: {
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 10,
+              fillColor: '#4FC3F7',
+              fillOpacity: 1,
+              strokeColor: '#0288D1',
+              strokeWeight: 2
+            }
+          });
+
+          <% if (order.tracking.driverLat && order.tracking.driverLng) { %>
+            const driverPos = {
+              lat: <%= order.tracking.driverLat %>,
+              lng: <%= order.tracking.driverLng %>
+            };
+
+            driverMarker = new google.maps.Marker({
+              position: driverPos,
+              map: map,
+              title: 'Driver',
+              icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 10,
+                fillColor: '#FF9800',
+                fillOpacity: 1,
+                strokeColor: '#F57C00',
+                strokeWeight: 2
+              }
+            });
+          <% } %>
+        }
+
+        socket.emit('tracking:join', <%= order.id %>);
+
+        socket.on('tracking:update', (data) => {
+          if (driverMarker) {
+            driverMarker.setPosition({ lat: data.lat, lng: data.lng });
+          } else {
+            driverMarker = new google.maps.Marker({
+              position: { lat: data.lat, lng: data.lng },
+              map: map,
+              title: 'Driver',
+              icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 10,
+                fillColor: '#FF9800',
+                fillOpacity: 1,
+                strokeColor: '#F57C00',
+                strokeWeight: 2
+              }
+            });
+          }
+        });
+
+        initMap();
+      </script>
+    <% } %>
+
+    <div style="margin-top: 2rem; text-align: center;">
+      <a href="/orders" class="btn btn-secondary">Back to Orders</a>
+    </div>
+  </div>
+
+  <%- include('../partials/footer') %>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> | GoCotano</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <%- include('../partials/header') %>
+
+  <div class="container">
+    <h1 style="color: var(--primary-blue); margin-bottom: 2rem;">Driver Dashboard</h1>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value"><%= stats.totalDeliveries %></div>
+        <div class="stat-label">Total Deliveries</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value"><%= stats.activeDeliveries %></div>
+        <div class="stat-label">Active Deliveries</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">$<%= ((stats.earnings._sum.totalAmount || 0) * 0.1).toFixed(2) %></div>
+        <div class="stat-label">Earnings (10%)</div>
+      </div>
+    </div>
+
+    <!-- Available Orders -->
+    <% if (availableOrders && availableOrders.length > 0) { %>
+      <div class="card" style="margin-bottom: 2rem;">
+        <div class="card-header">
+          <h2 class="card-title">Available Deliveries</h2>
+        </div>
+        <div class="card-body">
+          <% availableOrders.forEach(order => { %>
+            <div class="card" style="margin-bottom: 1rem; border: 2px solid var(--primary-orange);">
+              <h3 style="color: var(--primary-blue);">Order #<%= order.orderNumber %></h3>
+              <p><strong>From:</strong> <%= order.restaurant.name %></p>
+              <p><strong>To:</strong> <%= order.deliveryAddress %></p>
+              <p><strong>Amount:</strong> $<%= order.totalAmount.toFixed(2) %></p>
+              <button class="btn btn-primary" onclick="acceptDelivery(<%= order.id %>)">
+                Accept Delivery
+              </button>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    <% } %>
+
+    <!-- Current Deliveries -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">My Deliveries</h2>
+      </div>
+      <div class="card-body">
+        <% if (orders && orders.length > 0) { %>
+          <% orders.forEach(order => { %>
+            <div class="card" style="margin-bottom: 1rem;">
+              <div class="d-flex justify-between align-center">
+                <div>
+                  <h3 style="color: var(--primary-blue);">Order #<%= order.orderNumber %></h3>
+                  <p><strong>From:</strong> <%= order.restaurant.name %></p>
+                  <p><strong>To:</strong> <%= order.deliveryAddress %></p>
+                  <span class="badge badge-<%= order.status === 'DELIVERED' ? 'success' : 'primary' %>">
+                    <%= order.status %>
+                  </span>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 1.25rem; font-weight: 700;">
+                    $<%= order.totalAmount.toFixed(2) %>
+                  </div>
+                  <% if (order.status === 'READY') { %>
+                    <button class="btn btn-primary mt-2" onclick="startDelivery(<%= order.id %>)">
+                      Start Delivery
+                    </button>
+                  <% } else if (order.status === 'OUT_FOR_DELIVERY') { %>
+                    <button class="btn btn-primary mt-2" onclick="completeDelivery(<%= order.id %>)">
+                      Complete
+                    </button>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+          <% }); %>
+        <% } else { %>
+          <p style="text-align: center; color: var(--gray); padding: 2rem;">
+            No active deliveries.
+          </p>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <%- include('../partials/footer') %>
+
+  <script>
+    function acceptDelivery(orderId) {
+      // In production, would call API to assign driver
+      alert('Delivery accepted! Feature to be implemented.');
+    }
+
+    function startDelivery(orderId) {
+      fetch('/orders/update-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, status: 'OUT_FOR_DELIVERY' })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          location.reload();
+        }
+      });
+    }
+
+    function completeDelivery(orderId) {
+      fetch('/orders/update-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, status: 'DELIVERED' })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          location.reload();
+        }
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> | GoCotano</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <%- include('../partials/header') %>
+
+  <div class="container">
+    <h1 style="color: var(--primary-blue); margin-bottom: 2rem;">
+      Restaurant Dashboard - <%= user.restaurant.name %>
+    </h1>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value"><%= stats.totalOrders %></div>
+        <div class="stat-label">Total Orders</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value"><%= stats.pendingOrders %></div>
+        <div class="stat-label">Pending Orders</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">$<%= (stats.totalRevenue._sum.totalAmount || 0).toFixed(2) %></div>
+        <div class="stat-label">Total Revenue</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value"><%= stats.menuItems %></div>
+        <div class="stat-label">Menu Items</div>
+      </div>
+    </div>
+
+    <!-- Incoming Orders -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Incoming Orders</h2>
+      </div>
+      <div class="card-body">
+        <% if (orders && orders.length > 0) { %>
+          <% orders.forEach(order => { %>
+            <div class="card" style="margin-bottom: 1rem; border: 2px solid var(--primary-blue-lighter);">
+              <div class="d-flex justify-between align-center" style="margin-bottom: 1rem;">
+                <div>
+                  <h3 style="color: var(--primary-blue);">Order #<%= order.orderNumber %></h3>
+                  <p style="color: var(--gray); margin: 0;">
+                    <%= order.customer.email %> • <%= order._count.orderItems %> items
+                  </p>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary-orange);">
+                    $<%= order.totalAmount.toFixed(2) %>
+                  </div>
+                  <span class="badge badge-<%= order.status === 'PENDING' ? 'pending' : 'primary' %>">
+                    <%= order.status %>
+                  </span>
+                </div>
+              </div>
+              <div class="d-flex gap-2">
+                <% if (order.status === 'PENDING') { %>
+                  <button class="btn btn-primary" onclick="updateOrderStatus(<%= order.id %>, 'CONFIRMED')">
+                    Accept Order
+                  </button>
+                <% } else if (order.status === 'CONFIRMED') { %>
+                  <button class="btn btn-primary" onclick="updateOrderStatus(<%= order.id %>, 'PREPARING')">
+                    Start Preparing
+                  </button>
+                <% } else if (order.status === 'PREPARING') { %>
+                  <button class="btn btn-primary" onclick="updateOrderStatus(<%= order.id %>, 'READY')">
+                    Mark Ready
+                  </button>
+                <% } %>
+              </div>
+            </div>
+          <% }); %>
+        <% } else { %>
+          <p style="text-align: center; color: var(--gray); padding: 2rem;">
+            No orders at the moment.
+          </p>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <%- include('../partials/footer') %>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    function updateOrderStatus(orderId, status) {
+      fetch('/orders/update-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, status })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          socket.emit('order:status-update', { orderId, status });
+          location.reload();
+        }
+      });
+    }
+
+    socket.on('order:created', () => {
+      location.reload();
+    });
+  </script>
+</body>
+</html>
