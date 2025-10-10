@@ -6,7 +6,8 @@
   <title><%= title %> | GoCotano</title>
   <link rel="stylesheet" href="/css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://maps.googleapis.com/maps/api/js?key=<%= process.env.GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY' %>&libraries=places"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://www.paypal.com/sdk/js?client-id=<%= process.env.PAYPAL_CLIENT_ID || 'YOUR_CLIENT_ID' %>&currency=USD"></script>
 </head>
 <body>
@@ -87,40 +88,80 @@
     let map, marker;
     let deliveryLat, deliveryLng;
 
-    // Initialize Google Maps
+    // Initialize Leaflet Map with OpenStreetMap
     function initMap() {
-      const defaultLocation = { lat: 40.7128, lng: -74.0060 }; // New York
-      map = new google.maps.Map(document.getElementById('map'), {
-        center: defaultLocation,
-        zoom: 13
-      });
+      const defaultLocation = [14.5995, 120.9842]; // Manila, Philippines
+      map = L.map('map').setView(defaultLocation, 13);
 
-      marker = new google.maps.Marker({
-        map: map,
+      // Use tile URL from environment/config
+      const tileUrl = '<%= config.openStreetMap.tileUrl %>';
+      L.tileLayer(tileUrl, {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+      }).addTo(map);
+
+      marker = L.marker(defaultLocation, {
         draggable: true
-      });
+      }).addTo(map);
 
+      // Handle address input with Nominatim geocoding
       const input = document.getElementById('address-input');
-      const autocomplete = new google.maps.places.Autocomplete(input);
+      let searchTimeout;
 
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-        if (place.geometry) {
-          map.setCenter(place.geometry.location);
-          marker.setPosition(place.geometry.location);
-          deliveryLat = place.geometry.location.lat();
-          deliveryLng = place.geometry.location.lng();
-          document.getElementById('delivery-lat').value = deliveryLat;
-          document.getElementById('delivery-lng').value = deliveryLng;
-        }
+      input.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          const address = input.value;
+          if (address.length > 3) {
+            geocodeAddress(address);
+          }
+        }, 500);
       });
 
-      marker.addListener('dragend', (e) => {
-        deliveryLat = e.latLng.lat();
-        deliveryLng = e.latLng.lng();
+      // Handle marker drag
+      marker.on('dragend', (e) => {
+        const position = marker.getLatLng();
+        deliveryLat = position.lat;
+        deliveryLng = position.lng;
         document.getElementById('delivery-lat').value = deliveryLat;
         document.getElementById('delivery-lng').value = deliveryLng;
       });
+    }
+
+    // Geocode address using Nominatim
+    async function geocodeAddress(address) {
+      try {
+        // Use Nominatim URL from environment/config
+        const nominatimUrl = '<%= config.openStreetMap.nominatimBaseUrl %>';
+        const userAgent = '<%= config.openStreetMap.userAgent %>';
+
+        const response = await fetch(
+          `${nominatimUrl}/search?` +
+          `q=${encodeURIComponent(address)}&` +
+          `countrycodes=ph&format=json&limit=1`,
+          {
+            headers: {
+              'User-Agent': userAgent
+            }
+          }
+        );
+        const data = await response.json();
+
+        if (data && data.length > 0) {
+          const result = data[0];
+          const lat = parseFloat(result.lat);
+          const lng = parseFloat(result.lon);
+
+          map.setView([lat, lng], 15);
+          marker.setLatLng([lat, lng]);
+          deliveryLat = lat;
+          deliveryLng = lng;
+          document.getElementById('delivery-lat').value = lat;
+          document.getElementById('delivery-lng').value = lng;
+        }
+      } catch (error) {
+        console.error('Geocoding error:', error);
+      }
     }
 
     // Calculate order total

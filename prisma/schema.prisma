@@ -16,8 +16,12 @@ model User {
   email         String       @unique
   password      String
   phone         String       @unique
+  firstName     String
+  lastName      String
   role          Role         @default(CUSTOMER)
   isVerified    Boolean      @default(false)
+  language      String       @default("en") // en or fil
+  profileImage  String?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
   // Relations
@@ -25,6 +29,8 @@ model User {
   restaurant    Restaurant?
   driver        Driver?
   otpCodes      OtpCode[]
+  reviews       Review[]
+  paymentMethods PaymentMethod[]
 }
 
 enum Role {
@@ -47,58 +53,99 @@ model OtpCode {
 
 // Restaurant details
 model Restaurant {
-  id          Int        @id @default(autoincrement())
-  name        String
-  address     String
-  latitude    Float
-  longitude   Float
-  cuisine     String
-  rating      Float      @default(0)
-  isOpen      Boolean    @default(true)
-  userId      Int        @unique
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  menuItems   MenuItem[]
-  orders      Order[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id              Int        @id @default(autoincrement())
+  name            String
+  address         String
+  city            String     // Metro Manila, Cebu, Davao
+  latitude        Float
+  longitude       Float
+  cuisine         String
+  rating          Float      @default(0)
+  isOpen          Boolean    @default(true)
+  openingTime     String?    // HH:MM format
+  closingTime     String?    // HH:MM format
+  deliveryFee     Float      @default(50) // Base delivery fee in pesos
+  minimumOrder    Float      @default(100) // Minimum order in pesos
+  preparationTime Int        @default(30) // Average prep time in minutes
+  coverImage      String?
+  userId          Int        @unique
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  menuItems       MenuItem[]
+  orders          Order[]
+  reviews         Review[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 }
 
 // Menu items
 model MenuItem {
   id            Int         @id @default(autoincrement())
   name          String
+  nameFilipino  String?     // Filipino translation
   description   String      @db.Text
-  price         Float
+  descFilipino  String?     @db.Text
+  price         Float       // Price in Philippine Pesos
   image         String?
+  category      String      // Appetizer, Main, Dessert, Beverage
   available     Boolean     @default(true)
+  isSpicy       Boolean     @default(false)
+  isVegetarian  Boolean     @default(false)
   restaurantId  Int
   restaurant    Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   orderItems    OrderItem[]
+  customizations MenuCustomization[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 }
 
+// Menu customization options (add-ons, extras)
+model MenuCustomization {
+  id          Int      @id @default(autoincrement())
+  menuItemId  Int
+  menuItem    MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  name        String   // e.g., "Extra Rice", "Add Cheese"
+  price       Float    // Additional cost
+  available   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
 // Orders
 model Order {
-  id              Int           @id @default(autoincrement())
-  orderNumber     String        @unique
-  customerId      Int
-  customer        User          @relation(fields: [customerId], references: [id])
-  restaurantId    Int
-  restaurant      Restaurant    @relation(fields: [restaurantId], references: [id])
-  driverId        Int?
-  driver          Driver?       @relation(fields: [driverId], references: [id])
-  status          OrderStatus   @default(PENDING)
-  totalAmount     Float
-  deliveryAddress String
-  deliveryLat     Float
-  deliveryLng     Float
-  paymentId       String?
-  paymentStatus   PaymentStatus @default(PENDING)
-  orderItems      OrderItem[]
-  tracking        Tracking?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id                Int           @id @default(autoincrement())
+  orderNumber       String        @unique
+  customerId        Int
+  customer          User          @relation(fields: [customerId], references: [id])
+  restaurantId      Int
+  restaurant        Restaurant    @relation(fields: [restaurantId], references: [id])
+  driverId          Int?
+  driver            Driver?       @relation(fields: [driverId], references: [id])
+  status            OrderStatus   @default(PENDING)
+  subtotal          Float         // Items total in PHP
+  deliveryFee       Float         // Delivery fee in PHP
+  platformFee       Float         // Platform commission (15-20%)
+  discount          Float         @default(0) // Promo discount
+  totalAmount       Float         // Final total in PHP
+  deliveryAddress   String
+  deliveryCity      String
+  deliveryLat       Float
+  deliveryLng       Float
+  contactNumber     String        // +63 format
+  specialInstructions String?     @db.Text
+  paymentMethod     PaymentMethodType
+  paymentId         String?
+  paymentStatus     PaymentStatus @default(PENDING)
+  estimatedPrepTime Int?          // Minutes
+  estimatedDeliveryTime Int?      // Minutes
+  promoCodeId       Int?
+  promoCode         PromoCode?    @relation(fields: [promoCodeId], references: [id])
+  orderItems        OrderItem[]
+  tracking          Tracking?
+  transaction       Transaction?
+  settlements       Settlement[]
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  cancelledAt       DateTime?
+  cancelReason      String?
 }
 
 enum OrderStatus {
@@ -118,39 +165,170 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum PaymentMethodType {
+  PAYPAL
+  CASH_ON_DELIVERY
+}
+
 // Order items
 model OrderItem {
-  id          Int       @id @default(autoincrement())
-  orderId     Int
-  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  menuItemId  Int
-  menuItem    MenuItem  @relation(fields: [menuItemId], references: [id])
-  quantity    Int
-  price       Float
+  id                Int       @id @default(autoincrement())
+  orderId           Int
+  order             Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId        Int
+  menuItem          MenuItem  @relation(fields: [menuItemId], references: [id])
+  quantity          Int
+  price             Float     // Price per item in PHP
+  customizations    String?   @db.Text // JSON array of selected add-ons
+  specialRequest    String?   // Special instructions for this item
+  subtotal          Float     // quantity * (price + customizations)
 }
 
 // Delivery drivers
 model Driver {
+  id                Int       @id @default(autoincrement())
+  userId            Int       @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleType       String    // Motorcycle, Car, Bicycle
+  vehicleNumber     String
+  licenseNumber     String?
+  isAvailable       Boolean   @default(true)
+  isOnline          Boolean   @default(false)
+  currentLat        Float?
+  currentLng        Float?
+  currentCity       String?   // Current operating city
+  rating            Float     @default(5.0)
+  totalDeliveries   Int       @default(0)
+  totalEarnings     Float     @default(0) // Total earnings in PHP
+  orders            Order[]
+  earnings          DriverEarning[]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+// Driver earnings tracking
+model DriverEarning {
   id              Int       @id @default(autoincrement())
-  userId          Int       @unique
+  driverId        Int
+  driver          Driver    @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  orderId         Int?
+  amount          Float     // Earning in PHP
+  type            String    // delivery_fee, bonus, tip
+  status          String    // pending, paid
+  paidAt          DateTime?
+  createdAt       DateTime  @default(now())
+}
+
+// Real-time tracking
+model Tracking {
+  id                Int       @id @default(autoincrement())
+  orderId           Int       @unique
+  order             Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  driverLat         Float?
+  driverLng         Float?
+  restaurantLat     Float?
+  restaurantLng     Float?
+  customerLat       Float?
+  customerLng       Float?
+  estimatedTime     Int?      // minutes
+  distanceKm        Float?    // Distance in kilometers
+  currentStatus     String?   // heading_to_restaurant, at_restaurant, heading_to_customer
+  route             String?   @db.Text // JSON encoded route from Google Maps
+  lastUpdated       DateTime  @default(now())
+}
+
+// Reviews and ratings
+model Review {
+  id              Int       @id @default(autoincrement())
+  userId          Int
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vehicleType     String
-  vehicleNumber   String
-  isAvailable     Boolean   @default(true)
-  currentLat      Float?
-  currentLng      Float?
+  restaurantId    Int?
+  restaurant      Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  orderId         Int?
+  rating          Int       // 1-5 stars
+  comment         String?   @db.Text
+  driverRating    Int?      // Separate rating for driver
+  driverComment   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// Promo codes and discounts
+model PromoCode {
+  id              Int       @id @default(autoincrement())
+  code            String    @unique
+  description     String
+  discountType    String    // percentage, fixed
+  discountValue   Float     // Either percentage (e.g., 20) or fixed amount (e.g., 50)
+  minOrderAmount  Float?    // Minimum order to use promo
+  maxDiscount     Float?    // Max discount for percentage type
+  usageLimit      Int?      // Total times this code can be used
+  usageCount      Int       @default(0)
+  validFrom       DateTime
+  validUntil      DateTime
+  isActive        Boolean   @default(true)
   orders          Order[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 }
 
-// Real-time tracking
-model Tracking {
+// Payment methods saved by users
+model PaymentMethod {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            PaymentMethodType
+  accountName     String?
+  accountNumber   String?   // Last 4 digits only for security
+  isDefault       Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// Transaction records for all payments
+model Transaction {
   id              Int       @id @default(autoincrement())
   orderId         Int       @unique
   order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  driverLat       Float?
-  driverLng       Float?
-  estimatedTime   Int?      // minutes
-  lastUpdated     DateTime  @default(now())
+  paymentMethod   PaymentMethodType
+  amount          Float     // Total in PHP
+  platformFee     Float     // Platform commission
+  restaurantAmount Float    // Amount to restaurant
+  driverAmount    Float     // Amount to driver
+  status          String    // pending, completed, failed, refunded
+  gatewayResponse String?   @db.Text // JSON response from payment gateway
+  refundAmount    Float?
+  refundedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// Settlement records for restaurants and drivers
+model Settlement {
+  id              Int       @id @default(autoincrement())
+  orderId         Int
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  recipientType   String    // restaurant, driver
+  recipientId     Int       // Restaurant or Driver ID
+  amount          Float     // Amount in PHP
+  status          String    // pending, processing, completed, failed
+  scheduledFor    DateTime  // When settlement should be processed
+  processedAt     DateTime?
+  paymentReference String?  // Reference from payment gateway
+  notes           String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// Notifications log
+model Notification {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  type            String    // sms, push, email
+  channel         String    // order_update, promo, general
+  title           String
+  message         String    @db.Text
+  isRead          Boolean   @default(false)
+  sentAt          DateTime?
+  createdAt       DateTime  @default(now())
 }

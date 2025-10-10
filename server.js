@@ -15,6 +15,7 @@ import authRoutes from './src/routes/auth.routes.js';
 import restaurantRoutes from './src/routes/restaurant.routes.js';
 import orderRoutes from './src/routes/order.routes.js';
 import dashboardRoutes from './src/routes/dashboard.routes.js';
+import orderProcessorRoutes from './src/routes/order-processor.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,11 +29,11 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://maps.googleapis.com", "https://www.paypal.com", "https://www.paypalobjects.com"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://unpkg.com", "https://www.paypal.com", "https://www.paypalobjects.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: ["'self'", "https://maps.googleapis.com", "https://www.paypal.com"],
+      connectSrc: ["'self'", "https://nominatim.openstreetmap.org", "https://router.project-osrm.org", "https://www.paypal.com", "https://68e85f93f2707e6128caa838.mockapi.io"],
       frameSrc: ["https://www.paypal.com"]
     }
   }
@@ -68,10 +69,11 @@ app.use(flash());
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'src', 'views'));
 
-// Make user session available to all views
+// Make user session and config available to all views
 app.use((req, res, next) => {
   res.locals.userId = req.session?.userId;
   res.locals.userRole = req.session?.userRole;
+  res.locals.config = config; // Make config available to views
   next();
 });
 
@@ -81,6 +83,9 @@ app.use('/', authRoutes); // Rate limiter removed for development
 app.use('/restaurants', restaurantRoutes);
 app.use('/orders', orderRoutes);
 app.use('/dashboard', dashboardRoutes);
+
+// API Routes (MockAPI Integration)
+app.use('/api/order-processor', orderProcessorRoutes);
 
 // Socket.IO for real-time tracking
 io.on('connection', (socket) => {

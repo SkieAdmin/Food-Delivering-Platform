@@ -6,7 +6,8 @@
   <title><%= title %> | GoCotano</title>
   <link rel="stylesheet" href="/css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://maps.googleapis.com/maps/api/js?key=<%= process.env.GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY' %>"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
   <%- include('../partials/header') %>
@@ -98,71 +99,67 @@
         let map, driverMarker, destinationMarker;
 
         function initMap() {
-          const destination = {
-            lat: <%= order.deliveryLat %>,
-            lng: <%= order.deliveryLng %>
-          };
+          const destination = [<%= order.deliveryLat %>, <%= order.deliveryLng %>];
 
-          map = new google.maps.Map(document.getElementById('tracking-map'), {
-            center: destination,
-            zoom: 14
+          map = L.map('tracking-map').setView(destination, 14);
+
+          // Use tile URL from environment/config
+          const tileUrl = '<%= config.openStreetMap.tileUrl %>';
+          L.tileLayer(tileUrl, {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
+          }).addTo(map);
+
+          const destinationIcon = L.divIcon({
+            className: 'custom-marker',
+            html: '<div style="background-color: #4FC3F7; border: 3px solid #0288D1; width: 20px; height: 20px; border-radius: 50%;"></div>',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
           });
 
-          destinationMarker = new google.maps.Marker({
-            position: destination,
-            map: map,
-            title: 'Delivery Location',
-            icon: {
-              path: google.maps.SymbolPath.CIRCLE,
-              scale: 10,
-              fillColor: '#4FC3F7',
-              fillOpacity: 1,
-              strokeColor: '#0288D1',
-              strokeWeight: 2
-            }
-          });
+          destinationMarker = L.marker(destination, {
+            icon: destinationIcon,
+            title: 'Delivery Location'
+          }).addTo(map);
 
           <% if (order.tracking.driverLat && order.tracking.driverLng) { %>
-            const driverPos = {
-              lat: <%= order.tracking.driverLat %>,
-              lng: <%= order.tracking.driverLng %>
-            };
+            const driverPos = [<%= order.tracking.driverLat %>, <%= order.tracking.driverLng %>];
 
-            driverMarker = new google.maps.Marker({
-              position: driverPos,
-              map: map,
-              title: 'Driver',
-              icon: {
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 10,
-                fillColor: '#FF9800',
-                fillOpacity: 1,
-                strokeColor: '#F57C00',
-                strokeWeight: 2
-              }
+            const driverIcon = L.divIcon({
+              className: 'custom-marker',
+              html: '<div style="background-color: #FF9800; border: 3px solid #F57C00; width: 20px; height: 20px; border-radius: 50%;"></div>',
+              iconSize: [20, 20],
+              iconAnchor: [10, 10]
             });
+
+            driverMarker = L.marker(driverPos, {
+              icon: driverIcon,
+              title: 'Driver'
+            }).addTo(map);
+
+            // Fit bounds to show both markers
+            const bounds = L.latLngBounds([driverPos, destination]);
+            map.fitBounds(bounds, { padding: [50, 50] });
           <% } %>
         }
 
         socket.emit('tracking:join', <%= order.id %>);
 
         socket.on('tracking:update', (data) => {
+          const driverIcon = L.divIcon({
+            className: 'custom-marker',
+            html: '<div style="background-color: #FF9800; border: 3px solid #F57C00; width: 20px; height: 20px; border-radius: 50%;"></div>',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+          });
+
           if (driverMarker) {
-            driverMarker.setPosition({ lat: data.lat, lng: data.lng });
+            driverMarker.setLatLng([data.lat, data.lng]);
           } else {
-            driverMarker = new google.maps.Marker({
-              position: { lat: data.lat, lng: data.lng },
-              map: map,
-              title: 'Driver',
-              icon: {
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 10,
-                fillColor: '#FF9800',
-                fillOpacity: 1,
-                strokeColor: '#F57C00',
-                strokeWeight: 2
-              }
-            });
+            driverMarker = L.marker([data.lat, data.lng], {
+              icon: driverIcon,
+              title: 'Driver'
+            }).addTo(map);
           }
         });
 
