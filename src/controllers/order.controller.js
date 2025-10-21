@@ -1,7 +1,7 @@
 import prisma from '../config/database.js';
 import { generateOrderNumber } from '../utils/helpers.js';
 import { sendOrderConfirmation, sendOrderStatusUpdate } from '../services/sms.service.js';
-import { estimateDeliveryTime, calculateDistance } from '../services/maps.service.js';
+
 
 export const createOrder = async (req, res) => {
   try {

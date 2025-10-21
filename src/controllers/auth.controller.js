@@ -12,7 +12,7 @@ export const showRegister = (req, res) => {
 
 export const register = async (req, res) => {
   try {
-    const { email, password, phone, role } = req.body;
+    const { email, password, phone, role, firstName, lastName } = req.body;
 
     // Check if user exists
     const existingUser = await prisma.user.findFirst({
@@ -35,6 +35,8 @@ export const register = async (req, res) => {
         email,
         password: hashedPassword,
         phone,
+        firstName,
+        lastName,
         role: role || 'CUSTOMER'
       }
     });

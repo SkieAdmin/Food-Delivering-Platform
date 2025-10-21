@@ -13,6 +13,7 @@ import { config } from './src/config/api-keys.js';
 import homeRoutes from './src/routes/home.routes.js';
 import authRoutes from './src/routes/auth.routes.js';
 import restaurantRoutes from './src/routes/restaurant.routes.js';
+import restaurantOwnerRoutes from './src/routes/restaurant-owner.routes.js';
 import orderRoutes from './src/routes/order.routes.js';
 import dashboardRoutes from './src/routes/dashboard.routes.js';
 import orderProcessorRoutes from './src/routes/order-processor.routes.js';
@@ -81,6 +82,7 @@ app.use((req, res, next) => {
 app.use('/', homeRoutes);
 app.use('/', authRoutes); // Rate limiter removed for development
 app.use('/restaurants', restaurantRoutes);
+app.use('/restaurant', restaurantOwnerRoutes);
 app.use('/orders', orderRoutes);
 app.use('/dashboard', dashboardRoutes);
 

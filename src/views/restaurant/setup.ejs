@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> | GoCotano</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <meta name="robots" content="noindex">
+  <style>
+    .hint { color: var(--gray); font-size: 0.875rem; }
+    #map { height: 360px; border-radius: var(--radius-lg); border: 1px solid var(--border-color); }
+    .map-toolbar { display: flex; gap: .5rem; margin: .5rem 0 1rem; }
+  </style>
+  </head>
+<body>
+  <%- include('../partials/header') %>
+
+  <div class="container" style="max-width: 640px; margin-top: 2.5rem;">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title text-center">Setup Your Restaurant</h2>
+      </div>
+      <div class="card-body">
+        <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+          <div class="alert alert-error"><%= error %></div>
+        <% } %>
+
+        <% if (typeof success !== 'undefined' && success && success.length > 0) { %>
+          <div class="alert alert-success"><%= success %></div>
+        <% } %>
+
+        <form action="/restaurant/setup" method="POST">
+          <div class="form-group">
+            <label for="name" class="form-label">Restaurant Name</label>
+            <input type="text" id="name" name="name" class="form-control" required placeholder="e.g., Juan's Grill">
+          </div>
+
+          
+
+          <div class="form-group">
+            <label for="city" class="form-label">City</label>
+            <input type="text" id="city" name="city" class="form-control" required placeholder="e.g., Quezon City">
+          </div>
+
+          <div class="form-group">
+            <label for="cuisine" class="form-label">Cuisine</label>
+            <input type="text" id="cuisine" name="cuisine" class="form-control" required placeholder="e.g., Filipino, Korean, Desserts">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Restaurant Location</label>
+            <input type="text" id="address" name="address" class="form-control" required placeholder="123 Mabini St, Brgy. 123">
+            <div class="map-toolbar">
+              <button type="button" id="searchBtn" class="btn btn-secondary">Find on Map</button>
+              <button type="button" id="geoBtn" class="btn btn-secondary">Use My Location</button>
+            </div>
+            <div id="map"></div>
+            <div class="hint">Drag the pin to your exact location. Latitude/Longitude will auto-fill.</div>
+            <input type="hidden" id="latitude" name="latitude">
+            <input type="hidden" id="longitude" name="longitude">
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100" style="margin-top: 1rem;">
+            Create Restaurant Profile
+          </button>
+        </form>
+
+        <p class="text-center" style="margin-top: 1.25rem;">
+          <a href="/dashboard" class="btn btn-secondary">Back to Dashboard</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <%- include('../partials/footer') %>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    (function() {
+      const defaultCenter = [14.5995, 120.9842]; // Manila
+      const map = L.map('map').setView(defaultCenter, 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+
+      const latInput = document.getElementById('latitude');
+      const lngInput = document.getElementById('longitude');
+      const addressInput = document.getElementById('address');
+      const cityInput = document.getElementById('city');
+
+      function setLatLng(lat, lng, setView = false) {
+        latInput.value = lat.toFixed(6);
+        lngInput.value = lng.toFixed(6);
+        if (setView) map.setView([lat, lng], 16);
+      }
+
+      async function reverseGeocode(lat, lng) {
+        try {
+          const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+          const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+          const data = await res.json();
+          if (data && data.display_name) {
+            addressInput.value = data.display_name;
+          }
+          const a = data?.address || {};
+          const city = a.city || a.town || a.municipality || a.village || a.suburb || a.county || '';
+          if (city) cityInput.value = city;
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      let marker = L.marker(defaultCenter, { draggable: true }).addTo(map);
+      marker.on('dragend', () => {
+        const { lat, lng } = marker.getLatLng();
+        setLatLng(lat, lng);
+        reverseGeocode(lat, lng);
+      });
+      // Initialize hidden fields
+      setLatLng(defaultCenter[0], defaultCenter[1]);
+
+      // Use browser geolocation to center
+      const geoBtn = document.getElementById('geoBtn');
+      geoBtn.addEventListener('click', () => {
+        if (!navigator.geolocation) return alert('Geolocation not supported');
+        navigator.geolocation.getCurrentPosition((pos) => {
+          const { latitude, longitude } = pos.coords;
+          marker.setLatLng([latitude, longitude]);
+          setLatLng(latitude, longitude, true);
+          reverseGeocode(latitude, longitude);
+        }, () => alert('Unable to get your location'));
+      });
+
+      // Simple search with Nominatim (PH only)
+      const searchBtn = document.getElementById('searchBtn');
+      searchBtn.addEventListener('click', async () => {
+        const rawAddr = (addressInput.value || '').trim();
+        const city = (cityInput.value || '').trim();
+        const q = (rawAddr && city)
+          ? `${rawAddr}, ${city}, Philippines`
+          : (rawAddr ? `${rawAddr}, Philippines` : `${city}, Philippines`);
+        if (!q.trim()) return;
+        try {
+          const url = `https://nominatim.openstreetmap.org/search?format=json&countrycodes=ph&limit=1&q=${encodeURIComponent(q)}`;
+          const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            const lat = parseFloat(data[0].lat);
+            const lon = parseFloat(data[0].lon);
+            marker.setLatLng([lat, lon]);
+            setLatLng(lat, lon, true);
+            reverseGeocode(lat, lon);
+          } else {
+            alert('Address not found. Try a more specific query.');
+          }
+        } catch (e) {
+          alert('Search failed. You can still drag the pin manually.');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
