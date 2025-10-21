@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> | GoCotano</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <%- include('../../partials/header') %>
+
+  <div class="container">
+    <div class="d-flex justify-between align-center" style="margin-bottom: 1rem;">
+      <h1 style="color: var(--primary-blue);">Manage Menu - <%= restaurant.name %></h1>
+      <a href="/restaurant/menu/new" class="btn btn-primary">Add Menu Item</a>
+    </div>
+
+    <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+      <div class="alert alert-error"><%= error %></div>
+    <% } %>
+    <% if (typeof success !== 'undefined' && success && success.length > 0) { %>
+      <div class="alert alert-success"><%= success %></div>
+    <% } %>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Your Menu Items</h2>
+      </div>
+      <div class="card-body">
+        <% if (items && items.length) { %>
+          <table class="table" style="width:100%">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Flags</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% items.forEach(item => { %>
+                <tr>
+                  <td><strong><%= item.name %></strong></td>
+                  <td><%= item.category %></td>
+                  <td>$<%= item.price.toFixed(2) %></td>
+                  <td>
+                    <% if (item.isSpicy) { %><span class="badge badge-pending">Spicy</span><% } %>
+                    <% if (item.isVegetarian) { %><span class="badge badge-primary">Veg</span><% } %>
+                  </td>
+                  <td>
+                    <span class="badge <%= item.available ? 'badge-success' : 'badge-pending' %>">
+                      <%= item.available ? 'Available' : 'Unavailable' %>
+                    </span>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } else { %>
+          <p style="color: var(--gray);">No items yet. Click "Add Menu Item" to create your first item.</p>
+        <% } %>
+      </div>
+    </div>
+
+    <p style="margin-top: 1rem;"><a class="btn btn-secondary" href="/dashboard">Back to Dashboard</a></p>
+  </div>
+
+  <%- include('../../partials/footer') %>
+</body>
+</html>
+

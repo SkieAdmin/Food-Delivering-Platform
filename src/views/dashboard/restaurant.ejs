@@ -11,9 +11,15 @@
   <%- include('../partials/header') %>
 
   <div class="container">
-    <h1 style="color: var(--primary-blue); margin-bottom: 2rem;">
-      Restaurant Dashboard - <%= user.restaurant.name %>
-    </h1>
+    <div class="d-flex justify-between align-center" style="margin-bottom: 1rem;">
+      <h1 style="color: var(--primary-blue); margin: 0;">
+        Restaurant Dashboard - <%= user.restaurant.name %>
+      </h1>
+      <div class="d-flex gap-2">
+        <a href="/restaurant/menu" class="btn btn-primary">Manage Menu</a>
+        <a href="/restaurants/<%= user.restaurant.id %>" class="btn btn-secondary">View Storefront</a>
+      </div>
+    </div>
 
     <!-- Stats -->
     <div class="stats-grid">
