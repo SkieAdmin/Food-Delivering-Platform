@@ -127,8 +127,15 @@ export const verifyOTP = async (req, res) => {
 };
 
 export const showLogin = (req, res) => {
+  // Preserve returnTo parameter for after login
+  const returnTo = req.query.returnTo || req.session.returnTo;
+  if (returnTo) {
+    req.session.returnTo = returnTo;
+  }
+
   res.render('login', {
     title: 'Login',
+    returnTo: returnTo || '',
     error: req.flash('error'),
     success: req.flash('success')
   });
@@ -161,6 +168,13 @@ export const login = async (req, res) => {
     // Set session
     req.session.userId = user.id;
     req.session.userRole = user.role;
+
+    // Check if there's a pending checkout (for cart restoration)
+    const returnTo = req.query.returnTo || req.session.returnTo;
+    if (returnTo) {
+      delete req.session.returnTo;
+      return res.redirect(returnTo);
+    }
 
     res.redirect('/dashboard');
   } catch (error) {

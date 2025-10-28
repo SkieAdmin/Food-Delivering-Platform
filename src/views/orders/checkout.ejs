@@ -14,7 +14,12 @@
   <%- include('../partials/header') %>
 
   <div class="container" style="max-width: 800px;">
-    <h1 style="color: var(--primary-blue); margin-bottom: 2rem;">Checkout</h1>
+    <h1 style="color: var(--primary-blue); margin-bottom: 1rem;">Checkout</h1>
+
+    <!-- Debug Info Banner (will be populated by JS) -->
+    <div id="checkout-status" style="display: none; background: #e3f2fd; border-left: 4px solid var(--primary-blue); padding: 1rem; margin-bottom: 2rem; border-radius: var(--radius-md);">
+      <p style="margin: 0; color: var(--primary-blue); font-weight: 600;">✓ Cart loaded successfully</p>
+    </div>
 
     <div class="grid grid-2" style="gap: 2rem;">
       <!-- Delivery Details -->
@@ -75,6 +80,13 @@
           </div>
 
           <div id="paypal-button-container" style="margin-top: 1.5rem;"></div>
+
+          <div style="text-align: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--gray);">
+            <p style="color: var(--gray); font-size: 0.9rem; margin-bottom: 0.5rem;">Or</p>
+            <button id="place-order-btn" class="btn btn-secondary w-100" style="padding: 1rem; font-size: 1.1rem;">
+              Place Order (Pay on Delivery)
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -87,6 +99,34 @@
     const restaurantId = localStorage.getItem('restaurantId');
     let map, marker;
     let deliveryLat, deliveryLng;
+    let menuItemsData = {};
+
+    // Debug localStorage
+    console.log('=== CHECKOUT PAGE DEBUG ===');
+    console.log('Cart items from localStorage:', cartItems);
+    console.log('Restaurant ID from localStorage:', restaurantId);
+
+    // Check if cart is empty and redirect back
+    if (!cartItems || cartItems.length === 0) {
+      console.error('ERROR: Cart is empty!');
+      alert('⚠ Your cart is empty!\n\nThis could happen if:\n- You didn\'t add items to cart\n- Your browser cleared the data\n- You opened this page directly\n\nRedirecting you to restaurants...');
+      window.location.href = '/restaurants';
+    }
+
+    if (!restaurantId) {
+      console.error('ERROR: No restaurant ID!');
+      alert('⚠ Restaurant information is missing!\n\nPlease go back and select a restaurant.');
+      window.location.href = '/restaurants';
+    }
+
+    console.log('✓ Cart and restaurant data loaded successfully');
+
+    // Show success banner
+    const statusBanner = document.getElementById('checkout-status');
+    if (statusBanner) {
+      statusBanner.style.display = 'block';
+      statusBanner.innerHTML = `<p style="margin: 0; color: var(--primary-blue); font-weight: 600;">✓ Cart loaded: ${cartItems.length} item(s) • Restaurant ID: ${restaurantId}</p>`;
+    }
 
     // Initialize Leaflet Map with OpenStreetMap
     function initMap() {
@@ -164,12 +204,37 @@
       }
     }
 
+    // Fetch menu items data
+    async function fetchMenuItems() {
+      if (cartItems.length === 0) return;
+
+      const itemIds = cartItems.map(item => item.menuItemId).join(',');
+      try {
+        const response = await fetch(`/restaurants/api/menu-items?ids=${itemIds}`);
+        const data = await response.json();
+
+        if (data.success) {
+          data.items.forEach(item => {
+            menuItemsData[item.id] = item;
+          });
+          calculateTotal();
+        }
+      } catch (error) {
+        console.error('Failed to fetch menu items:', error);
+      }
+    }
+
     // Calculate order total
     function calculateTotal() {
-      // In production, fetch actual menu item prices from server
-      const subtotal = cartItems.reduce((sum, item) => {
-        return sum + (item.quantity * 10); // Placeholder price
-      }, 0);
+      let subtotal = 0;
+
+      // Calculate subtotal using real prices
+      cartItems.forEach(item => {
+        const menuItem = menuItemsData[item.menuItemId];
+        if (menuItem) {
+          subtotal += menuItem.price * item.quantity;
+        }
+      });
 
       const deliveryFee = 5;
       const total = subtotal + deliveryFee;
@@ -177,22 +242,34 @@
       document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
       document.getElementById('total').textContent = `$${total.toFixed(2)}`;
 
-      // Display order items
-      const itemsHtml = cartItems.map(item => `
-        <div class="d-flex justify-between" style="margin-bottom: 0.5rem;">
-          <span>${item.quantity}x Item #${item.menuItemId}</span>
-          <span>$${(item.quantity * 10).toFixed(2)}</span>
-        </div>
-      `).join('');
+      // Display order items with names and real prices
+      const itemsHtml = cartItems.map(item => {
+        const menuItem = menuItemsData[item.menuItemId];
+        const itemName = menuItem ? menuItem.name : `Item #${item.menuItemId}`;
+        const itemPrice = menuItem ? menuItem.price * item.quantity : 0;
+
+        return `
+          <div class="d-flex justify-between" style="margin-bottom: 0.5rem;">
+            <span>${item.quantity}x ${itemName}</span>
+            <span>$${itemPrice.toFixed(2)}</span>
+          </div>
+        `;
+      }).join('');
       document.getElementById('order-items').innerHTML = itemsHtml;
 
       return total;
     }
 
-    // Initialize PayPal
-    const total = calculateTotal();
+    // Initialize page
+    async function initPage() {
+      await fetchMenuItems();
+      const total = calculateTotal();
+      initializePayPal(total);
+    }
 
-    paypal.Buttons({
+    // Initialize PayPal
+    function initializePayPal(total) {
+      paypal.Buttons({
       createOrder: function(data, actions) {
         const address = document.getElementById('address-input').value;
         const lat = document.getElementById('delivery-lat').value;
@@ -241,10 +318,83 @@
         console.error('PayPal error:', err);
         alert('Payment failed. Please try again.');
       }
-    }).render('#paypal-button-container');
+      }).render('#paypal-button-container');
+    }
 
-    // Initialize map on load
+    // Initialize map and page on load
     initMap();
+    initPage();
+
+    // Place order without PayPal (Pay on Delivery)
+    document.getElementById('place-order-btn')?.addEventListener('click', function() {
+      const address = document.getElementById('address-input').value;
+      const lat = document.getElementById('delivery-lat').value;
+      const lng = document.getElementById('delivery-lng').value;
+
+      if (!address || !lat || !lng) {
+        alert('Please enter a delivery address and select location on map');
+        return;
+      }
+
+      if (cartItems.length === 0) {
+        alert('Your cart is empty');
+        return;
+      }
+
+      // Disable button to prevent double submission
+      this.disabled = true;
+      this.textContent = 'Placing Order...';
+
+      const orderData = {
+        restaurantId: parseInt(restaurantId),
+        items: cartItems,
+        deliveryAddress: address,
+        deliveryLat: parseFloat(lat),
+        deliveryLng: parseFloat(lng),
+        paymentMethod: 'CASH_ON_DELIVERY'
+      };
+
+      console.log('=== CLIENT-SIDE ORDER DEBUG ===');
+      console.log('Order data being sent:', JSON.stringify(orderData, null, 2));
+      console.log('Restaurant ID:', restaurantId);
+      console.log('Cart items:', cartItems);
+
+      // Create order in backend
+      fetch('/orders/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData)
+      })
+      .then(async res => {
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to create order');
+        }
+        return data;
+      })
+      .then(data => {
+        console.log('✓ Server response:', data);
+        if (data.success) {
+          console.log('✓ Order created! ID:', data.orderId, 'Number:', data.orderNumber);
+          localStorage.removeItem('cartItems');
+          localStorage.removeItem('restaurantId');
+          alert('✓ Order placed successfully! Order #' + data.orderNumber + '\n\nYou can view your order in "My Orders".');
+          console.log('Redirecting to order details page...');
+          window.location.href = '/orders/' + data.orderId;
+        } else {
+          console.error('Order creation failed:', data.error);
+          alert('Failed to place order: ' + (data.error || 'Unknown error'));
+          this.disabled = false;
+          this.textContent = 'Place Order (Pay on Delivery)';
+        }
+      })
+      .catch(error => {
+        console.error('Order creation error:', error);
+        alert('Failed to place order: ' + error.message + '\n\nPlease try again or contact support.');
+        this.disabled = false;
+        this.textContent = 'Place Order (Pay on Delivery)';
+      });
+    });
   </script>
 </body>
 </html>

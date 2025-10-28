@@ -64,10 +64,19 @@
         <div style="padding: 3rem;">
           <div style="font-size: 4rem; margin-bottom: 1rem;">🍽️</div>
           <h3 style="color: var(--primary-blue); margin-bottom: 1rem;">No Orders Yet</h3>
-          <p style="color: var(--gray); margin-bottom: 2rem;">
-            Looks like you haven't placed any orders yet. Start exploring our restaurants!
+          <p style="color: var(--gray); margin-bottom: 1rem;">
+            You haven't completed any orders yet.
           </p>
-          <a href="/restaurants" class="btn btn-primary">Browse Restaurants</a>
+          <div style="background: var(--primary-blue-lighter); padding: 1.5rem; border-radius: var(--radius-md); margin-bottom: 2rem; text-align: left;">
+            <p style="font-weight: 600; color: var(--primary-blue); margin-bottom: 0.5rem;">📝 How to place an order:</p>
+            <ol style="color: var(--gray); margin: 0; padding-left: 1.5rem;">
+              <li>Browse restaurants and add items to your cart</li>
+              <li>Click "Proceed to Checkout" button</li>
+              <li>Enter delivery address and complete payment</li>
+              <li>Your order will appear here!</li>
+            </ol>
+          </div>
+          <a href="/restaurants" class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1.1rem;">Browse Restaurants</a>
         </div>
       </div>
     <% } %>

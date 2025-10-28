@@ -6,6 +6,21 @@
   <title><%= title %> | GoCotano</title>
   <link rel="stylesheet" href="/css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    #checkout-btn {
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
 </head>
 <body>
   <%- include('../partials/header') %>
@@ -31,7 +46,8 @@
     <h2 style="color: var(--primary-blue); margin-bottom: 1.5rem;">Menu</h2>
 
     <% if (restaurant.menuItems && restaurant.menuItems.length > 0) { %>
-      <div id="cart-summary" style="display: none; position: fixed; bottom: 2rem; right: 2rem; background: var(--primary-orange); color: white; padding: 1rem 1.5rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); cursor: pointer; z-index: 999;">
+      <div id="cart-summary" style="display: none; position: fixed; bottom: 2rem; right: 2rem; background: var(--primary-orange); color: white; padding: 1rem 1.5rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); cursor: pointer; z-index: 999; transition: transform 0.3s ease;">
+        <div style="font-size: 0.85rem; margin-bottom: 0.25rem; opacity: 0.9;">🛒 Cart (Click to checkout)</div>
         <div id="cart-count">0 items</div>
         <div id="cart-total" style="font-size: 1.25rem; font-weight: 700;">$0.00</div>
       </div>
@@ -49,14 +65,18 @@
             <p class="menu-item-description"><%= item.description %></p>
             <div class="d-flex justify-between align-center" style="margin-top: 0.5rem;">
               <div class="menu-item-price">$<%= item.price.toFixed(2) %></div>
-              <% if (restaurant.isOpen) { %>
-                <div class="d-flex align-center gap-2">
-                  <button class="btn btn-secondary" onclick="updateQuantity(<%= item.id %>, -1)" style="padding: 0.5rem 0.75rem;">-</button>
-                  <span id="qty-<%= item.id %>" style="font-weight: 600; min-width: 2rem; text-align: center;">0</span>
-                  <button class="btn btn-primary" onclick="updateQuantity(<%= item.id %>, 1)" style="padding: 0.5rem 0.75rem;">+</button>
-                </div>
+              <% if (restaurant.isOpen && item.available) { %>
+                <button
+                  class="btn btn-primary add-order-btn"
+                  data-item-id="<%= item.id %>"
+                  data-item-name="<%= item.name %>"
+                  data-item-price="<%= item.price %>"
+                  style="padding: 0.5rem 1rem; font-weight: 600;"
+                >
+                  Add Order
+                </button>
               <% } else { %>
-                <span class="badge badge-pending">Unavailable</span>
+                <span class="badge badge-pending"><%= !restaurant.isOpen ? 'Restaurant Closed' : 'Unavailable' %></span>
               <% } %>
             </div>
           </div>
@@ -64,8 +84,8 @@
       <% }); %>
 
       <% if (restaurant.isOpen) { %>
-        <button id="checkout-btn" class="btn btn-primary w-100" style="margin-top: 2rem; padding: 1rem; font-size: 1.1rem; display: none;" onclick="proceedToCheckout()">
-          Proceed to Checkout
+        <button id="checkout-btn" class="btn btn-primary w-100" style="margin-top: 2rem; padding: 1.25rem; font-size: 1.2rem; font-weight: 700; display: none; background: var(--primary-orange); border-color: var(--primary-orange);" onclick="proceedToCheckout()">
+          🛒 Proceed to Checkout & Complete Order
         </button>
       <% } %>
     <% } else { %>
@@ -75,19 +95,122 @@
     <% } %>
   </div>
 
+  <!-- Order Modal -->
+  <div id="order-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="card" style="width: 90%; max-width: 500px; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+      <button id="btn-close-modal" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 2rem; cursor: pointer; color: var(--gray); line-height: 1; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">&times;</button>
+
+      <div class="card-header">
+        <h2 class="card-title" id="modal-item-name">Add to Order</h2>
+      </div>
+
+      <div class="card-body">
+        <div style="text-align: center; margin-bottom: 2rem;">
+          <p style="color: var(--gray); margin-bottom: 1rem;">Price: $<span id="modal-item-price">0.00</span></p>
+
+          <div class="form-group">
+            <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Quantity</label>
+            <div class="d-flex align-center justify-center gap-2" style="margin-bottom: 1rem;">
+              <button id="btn-decrease-qty" class="btn btn-secondary" style="padding: 0.75rem 1.25rem; font-size: 1.25rem; min-width: 50px;">−</button>
+              <input type="number" id="modal-quantity" value="1" min="1" max="99" readonly style="width: 80px; text-align: center; font-size: 1.5rem; font-weight: 700; border: 2px solid var(--primary-blue); border-radius: var(--radius-md); padding: 0.5rem;">
+              <button id="btn-increase-qty" class="btn btn-primary" style="padding: 0.75rem 1.25rem; font-size: 1.25rem; min-width: 50px;">+</button>
+            </div>
+          </div>
+
+          <div style="padding: 1rem; background: var(--primary-blue-lighter); border-radius: var(--radius-md); margin-bottom: 1rem;">
+            <p style="font-size: 0.9rem; color: var(--gray); margin-bottom: 0.25rem;">Total Price</p>
+            <p style="font-size: 1.75rem; font-weight: 700; color: var(--primary-orange); margin: 0;">$<span id="modal-total-price">0.00</span></p>
+          </div>
+        </div>
+
+        <button id="btn-confirm-add" class="btn btn-primary w-100" style="padding: 1rem; font-size: 1.1rem; font-weight: 600;">
+          Confirm & Add to Cart
+        </button>
+      </div>
+    </div>
+  </div>
+
   <%- include('../partials/footer') %>
 
   <script>
     const cart = {};
     const restaurantId = <%= restaurant.id %>;
+    let currentModalItem = { id: null, name: '', price: 0 };
 
-    function updateQuantity(itemId, change) {
-      if (!cart[itemId]) cart[itemId] = 0;
-      cart[itemId] += change;
-      if (cart[itemId] < 0) cart[itemId] = 0;
+    // Open modal for adding item
+    function openOrderModal(itemId, itemName, itemPrice) {
+      console.log('Opening modal for:', itemId, itemName, itemPrice);
 
-      document.getElementById(`qty-${itemId}`).textContent = cart[itemId];
+      currentModalItem = { id: itemId, name: itemName, price: itemPrice };
+
+      const modal = document.getElementById('order-modal');
+      const modalName = document.getElementById('modal-item-name');
+      const modalPrice = document.getElementById('modal-item-price');
+      const modalQty = document.getElementById('modal-quantity');
+      const modalTotal = document.getElementById('modal-total-price');
+
+      console.log('Modal element:', modal);
+      console.log('Modal name element:', modalName);
+
+      if (!modal) {
+        console.error('Modal not found!');
+        return;
+      }
+
+      modalName.textContent = itemName;
+      modalPrice.textContent = itemPrice.toFixed(2);
+      modalQty.value = 1;
+      modalTotal.textContent = itemPrice.toFixed(2);
+
+      modal.style.display = 'flex';
+      console.log('Modal display set to flex');
+    }
+
+    // Close modal
+    function closeOrderModal() {
+      document.getElementById('order-modal').style.display = 'none';
+      currentModalItem = { id: null, name: '', price: 0 };
+    }
+
+    // Update quantity in modal
+    function updateModalQuantity(change) {
+      const qtyInput = document.getElementById('modal-quantity');
+      let currentQty = parseInt(qtyInput.value);
+      currentQty += change;
+
+      if (currentQty < 1) currentQty = 1;
+      if (currentQty > 99) currentQty = 99;
+
+      qtyInput.value = currentQty;
+      const totalPrice = currentQty * currentModalItem.price;
+      document.getElementById('modal-total-price').textContent = totalPrice.toFixed(2);
+    }
+
+    // Confirm and add to cart
+    function confirmAddToCart() {
+      const quantity = parseInt(document.getElementById('modal-quantity').value);
+      const itemId = currentModalItem.id;
+
+      // Add to cart (or update existing quantity)
+      if (!cart[itemId]) {
+        cart[itemId] = 0;
+      }
+      cart[itemId] += quantity;
+
+      // Show success feedback with clear instructions
+      const itemName = currentModalItem.name;
+      alert(`✓ Added ${quantity}x ${itemName} to your cart!\n\nClick "Proceed to Checkout" below to complete your order.`);
+
       updateCartSummary();
+      closeOrderModal();
+
+      // Scroll to checkout button to make it more visible
+      setTimeout(() => {
+        const checkoutBtn = document.getElementById('checkout-btn');
+        if (checkoutBtn && checkoutBtn.style.display !== 'none') {
+          checkoutBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
     }
 
     function updateCartSummary() {
@@ -111,6 +234,12 @@
         checkoutBtn.style.display = 'block';
         document.getElementById('cart-count').textContent = `${totalItems} item${totalItems > 1 ? 's' : ''}`;
         document.getElementById('cart-total').textContent = `$${totalPrice.toFixed(2)}`;
+
+        // Add pulse animation to draw attention
+        summary.style.animation = 'pulse 0.5s ease';
+        setTimeout(() => {
+          summary.style.animation = '';
+        }, 500);
       } else {
         summary.style.display = 'none';
         checkoutBtn.style.display = 'none';
@@ -118,6 +247,9 @@
     }
 
     function proceedToCheckout() {
+      console.log('=== PROCEED TO CHECKOUT ===');
+      console.log('Current cart:', cart);
+
       const items = [];
       Object.keys(cart).forEach(itemId => {
         if (cart[itemId] > 0) {
@@ -125,12 +257,103 @@
         }
       });
 
+      console.log('Items to checkout:', items);
+
+      if (items.length === 0) {
+        alert('Your cart is empty! Please add items before checking out.');
+        return;
+      }
+
+      // Always save cart data to localStorage
       localStorage.setItem('cartItems', JSON.stringify(items));
       localStorage.setItem('restaurantId', restaurantId);
-      window.location.href = '/orders/checkout?restaurantId=' + restaurantId;
+
+      console.log('✓ Cart saved to localStorage');
+      console.log('✓ Restaurant ID:', restaurantId);
+
+      <% if (typeof userId === 'undefined' || !userId) { %>
+        // User not logged in - redirect to login with return URL
+        console.log('⚠ User not logged in, redirecting to login...');
+        alert('Please log in to complete your order.\n\nYour cart will be saved.');
+        window.location.href = '/login?returnTo=' + encodeURIComponent('/orders/checkout?restaurantId=' + restaurantId);
+      <% } else { %>
+        // User logged in - proceed to checkout
+        console.log('✓ User logged in (ID: <%= userId %>), proceeding to checkout...');
+        window.location.href = '/orders/checkout?restaurantId=' + restaurantId;
+      <% } %>
     }
 
-    document.getElementById('cart-summary')?.addEventListener('click', proceedToCheckout);
+    // Attach event listeners to all "Add Order" buttons
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('DOM loaded, attaching event listeners');
+
+      const addOrderBtns = document.querySelectorAll('.add-order-btn');
+      console.log('Found', addOrderBtns.length, 'add order buttons');
+
+      addOrderBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+          const itemId = parseInt(this.dataset.itemId);
+          const itemName = this.dataset.itemName;
+          const itemPrice = parseFloat(this.dataset.itemPrice);
+
+          console.log('Button clicked:', itemId, itemName, itemPrice);
+          openOrderModal(itemId, itemName, itemPrice);
+        });
+      });
+
+      // Close modal button
+      const btnCloseModal = document.getElementById('btn-close-modal');
+      if (btnCloseModal) {
+        btnCloseModal.addEventListener('click', function() {
+          console.log('Close button clicked');
+          closeOrderModal();
+        });
+      }
+
+      // Quantity decrease button
+      const btnDecreaseQty = document.getElementById('btn-decrease-qty');
+      if (btnDecreaseQty) {
+        btnDecreaseQty.addEventListener('click', function() {
+          console.log('Decrease quantity clicked');
+          updateModalQuantity(-1);
+        });
+      }
+
+      // Quantity increase button
+      const btnIncreaseQty = document.getElementById('btn-increase-qty');
+      if (btnIncreaseQty) {
+        btnIncreaseQty.addEventListener('click', function() {
+          console.log('Increase quantity clicked');
+          updateModalQuantity(1);
+        });
+      }
+
+      // Confirm add to cart button
+      const btnConfirmAdd = document.getElementById('btn-confirm-add');
+      if (btnConfirmAdd) {
+        btnConfirmAdd.addEventListener('click', function() {
+          console.log('Confirm add clicked');
+          confirmAddToCart();
+        });
+      }
+
+      // Close modal when clicking outside
+      const modal = document.getElementById('order-modal');
+      if (modal) {
+        modal.addEventListener('click', function(e) {
+          if (e.target.id === 'order-modal') {
+            console.log('Clicked outside modal');
+            closeOrderModal();
+          }
+        });
+      }
+
+      // Cart summary click handler
+      const cartSummary = document.getElementById('cart-summary');
+      if (cartSummary) {
+        cartSummary.addEventListener('click', proceedToCheckout);
+      }
+    });
   </script>
 </body>
 </html>

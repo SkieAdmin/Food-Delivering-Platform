@@ -238,3 +238,28 @@ export const createMenuItem = async (req, res) => {
     res.redirect('back');
   }
 };
+
+// API endpoint to get menu items by IDs
+export const getMenuItemsByIds = async (req, res) => {
+  try {
+    const { ids } = req.query;
+    const itemIds = ids.split(',').map(id => parseInt(id));
+
+    const menuItems = await prisma.menuItem.findMany({
+      where: {
+        id: { in: itemIds }
+      },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        image: true
+      }
+    });
+
+    res.json({ success: true, items: menuItems });
+  } catch (error) {
+    console.error('Get menu items error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch menu items' });
+  }
+};

@@ -8,6 +8,24 @@ export const createOrder = async (req, res) => {
     const { restaurantId, items, deliveryAddress, deliveryLat, deliveryLng } = req.body;
     const userId = req.session.userId;
 
+    console.log('=== CREATE ORDER DEBUG ===');
+    console.log('Session userId:', userId);
+    console.log('Restaurant ID:', restaurantId);
+    console.log('Items:', JSON.stringify(items));
+    console.log('Delivery Address:', deliveryAddress);
+
+    // Validate user is logged in
+    if (!userId) {
+      console.error('ERROR: No userId in session');
+      return res.status(401).json({ success: false, error: 'You must be logged in to place an order' });
+    }
+
+    // Validate items exist
+    if (!items || items.length === 0) {
+      console.error('ERROR: No items provided');
+      return res.status(400).json({ success: false, error: 'Cart is empty' });
+    }
+
     // Calculate total amount
     let totalAmount = 0;
     const orderItems = [];
@@ -24,8 +42,13 @@ export const createOrder = async (req, res) => {
           quantity: item.quantity,
           price: menuItem.price
         });
+      } else {
+        console.error(`ERROR: Menu item ${item.menuItemId} not found`);
       }
     }
+
+    console.log('Total amount:', totalAmount);
+    console.log('Order items count:', orderItems.length);
 
     // Create order
     const order = await prisma.order.create({
@@ -47,13 +70,21 @@ export const createOrder = async (req, res) => {
       }
     });
 
+    console.log('✓ Order created successfully:', order.id, order.orderNumber);
+    console.log('✓ Customer ID:', order.customerId);
+
     // Send SMS confirmation
-    await sendOrderConfirmation(order.customer.phone, order.orderNumber);
+    try {
+      await sendOrderConfirmation(order.customer.phone, order.orderNumber);
+      console.log('✓ SMS confirmation sent');
+    } catch (smsError) {
+      console.error('SMS error (non-critical):', smsError.message);
+    }
 
     res.json({ success: true, orderId: order.id, orderNumber: order.orderNumber });
   } catch (error) {
     console.error('Create order error:', error);
-    res.status(500).json({ success: false, error: 'Failed to create order' });
+    res.status(500).json({ success: false, error: error.message || 'Failed to create order' });
   }
 };
 
@@ -101,6 +132,16 @@ export const listOrders = async (req, res) => {
   try {
     const userId = req.session.userId;
 
+    console.log('=== LIST ORDERS DEBUG ===');
+    console.log('Session userId:', userId);
+    console.log('Session data:', JSON.stringify(req.session));
+
+    if (!userId) {
+      console.error('ERROR: No userId in session when listing orders');
+      req.flash('error', 'Please login to view orders');
+      return res.redirect('/login');
+    }
+
     const orders = await prisma.order.findMany({
       where: { customerId: userId },
       include: {
@@ -113,6 +154,16 @@ export const listOrders = async (req, res) => {
         createdAt: 'desc'
       }
     });
+
+    console.log('✓ Found', orders.length, 'orders for userId:', userId);
+    if (orders.length > 0) {
+      console.log('Sample order:', {
+        id: orders[0].id,
+        orderNumber: orders[0].orderNumber,
+        customerId: orders[0].customerId,
+        restaurantName: orders[0].restaurant.name
+      });
+    }
 
     res.render('orders/list', {
       title: 'My Orders',
