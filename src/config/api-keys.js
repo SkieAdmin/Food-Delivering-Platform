@@ -22,7 +22,8 @@ export const config = {
     userAgent: process.env.OSM_USER_AGENT || 'PH-Food-Delivery-Platform/1.0'
   },
   mockAPI: {
-    baseUrl: process.env.MOCKAPI_BASE_URL || 'https://68e85f93f2707e6128caa838.mockapi.io/order/processor',
+    baseUrl: process.env.MOCKAPI_BASE_URL || 'https://68e85f93f2707e6128caa838.mockapi.io',
+    projectId: process.env.MOCKAPI_PROJECT_ID || '68e85f93f2707e6128caa838',
     timeout: parseInt(process.env.MOCKAPI_TIMEOUT) || 10000
   }
 };

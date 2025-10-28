@@ -1,10 +1,11 @@
 import axios from 'axios';
+import { config } from '../config/api-keys.js';
 
 /**
  * MockAPI Service for Order Processing
  * Simulates external order processing system using MockAPI.io
  *
- * Base URL: https://68e85f93f2707e6128caa838.mockapi.io/order/processor/
+ * Base URL: https://68e85f93f2707e6128caa838.mockapi.io/order/processor
  *
  * This service acts as a connector between our Express backend
  * and the external MockAPI order processing system.
@@ -12,9 +13,11 @@ import axios from 'axios';
 
 class MockAPIService {
   constructor() {
-    // Get MockAPI base URL from environment variable
-    this.baseURL = process.env.MOCKAPI_BASE_URL || 'https://68e85f93f2707e6128caa838.mockapi.io/order/processor';
-    this.timeout = parseInt(process.env.MOCKAPI_TIMEOUT) || 10000; // 10 seconds default
+    // Build full URL from config
+    const baseUrl = config.mockAPI.baseUrl;
+    this.baseURL = `${baseUrl}/order/processor`;
+    this.timeout = config.mockAPI.timeout;
+    this.projectId = config.mockAPI.projectId;
   }
 
   /**
