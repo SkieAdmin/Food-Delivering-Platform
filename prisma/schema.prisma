@@ -85,7 +85,7 @@ model MenuItem {
   description   String      @db.Text
   descFilipino  String?     @db.Text
   price         Float       // Price in Philippine Pesos
-  image         String?
+  image         String?     @db.Text
   category      String      // Appetizer, Main, Dessert, Beverage
   available     Boolean     @default(true)
   isSpicy       Boolean     @default(false)

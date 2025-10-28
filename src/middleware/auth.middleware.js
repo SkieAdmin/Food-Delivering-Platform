@@ -2,6 +2,8 @@ export const isAuthenticated = (req, res, next) => {
   if (req.session && req.session.userId) {
     return next();
   }
+  // Save the return URL for after login
+  req.session.returnTo = req.originalUrl;
   req.flash('error', 'Please login to continue');
   res.redirect('/login');
 };
