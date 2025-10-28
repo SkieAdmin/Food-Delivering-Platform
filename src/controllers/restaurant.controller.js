@@ -239,6 +239,154 @@ export const createMenuItem = async (req, res) => {
   }
 };
 
+// Restaurant Owner: Update menu item
+export const updateMenuItem = async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    const { id } = req.params;
+
+    const restaurant = await prisma.restaurant.findUnique({ where: { userId } });
+    if (!restaurant) {
+      req.flash('error', 'Please complete your restaurant profile');
+      return res.redirect('/restaurant/setup');
+    }
+
+    // Verify the menu item belongs to this restaurant
+    const existingItem = await prisma.menuItem.findFirst({
+      where: {
+        id: parseInt(id),
+        restaurantId: restaurant.id
+      }
+    });
+
+    if (!existingItem) {
+      req.flash('error', 'Menu item not found');
+      return res.redirect('/restaurant/menu');
+    }
+
+    const {
+      name,
+      description,
+      price,
+      category,
+      image,
+      nameFilipino,
+      descFilipino,
+      isSpicy,
+      isVegetarian,
+      available
+    } = req.body;
+
+    // Determine image URL: uploaded file takes precedence
+    let imageUrl = image?.trim() || existingItem.image;
+    if (req.file && req.file.filename) {
+      imageUrl = `/uploads/menu/${req.file.filename}`;
+    }
+
+    await prisma.menuItem.update({
+      where: { id: parseInt(id) },
+      data: {
+        name: name.trim(),
+        nameFilipino: nameFilipino?.trim() || null,
+        description: description.trim(),
+        descFilipino: descFilipino?.trim() || null,
+        price: parseFloat(price),
+        image: imageUrl,
+        category: category.trim(),
+        available: available === 'on' || available === 'true' || available === true,
+        isSpicy: isSpicy === 'on' || isSpicy === 'true' || isSpicy === true,
+        isVegetarian: isVegetarian === 'on' || isVegetarian === 'true' || isVegetarian === true
+      }
+    });
+
+    req.flash('success', `Updated "${name}" successfully`);
+    res.redirect('/restaurant/menu');
+  } catch (error) {
+    console.error('Update menu item error:', error);
+    req.flash('error', 'Failed to update menu item');
+    res.redirect('back');
+  }
+};
+
+// Restaurant Owner: Delete menu item
+export const deleteMenuItem = async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    const { id } = req.params;
+
+    const restaurant = await prisma.restaurant.findUnique({ where: { userId } });
+    if (!restaurant) {
+      req.flash('error', 'Please complete your restaurant profile');
+      return res.redirect('/restaurant/setup');
+    }
+
+    // Verify the menu item belongs to this restaurant
+    const existingItem = await prisma.menuItem.findFirst({
+      where: {
+        id: parseInt(id),
+        restaurantId: restaurant.id
+      }
+    });
+
+    if (!existingItem) {
+      req.flash('error', 'Menu item not found');
+      return res.redirect('/restaurant/menu');
+    }
+
+    await prisma.menuItem.delete({
+      where: { id: parseInt(id) }
+    });
+
+    req.flash('success', `Deleted "${existingItem.name}" successfully`);
+    res.redirect('/restaurant/menu');
+  } catch (error) {
+    console.error('Delete menu item error:', error);
+    req.flash('error', 'Failed to delete menu item');
+    res.redirect('back');
+  }
+};
+
+// Restaurant Owner: Toggle menu item availability (AJAX)
+export const toggleAvailability = async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    const { id } = req.params;
+
+    const restaurant = await prisma.restaurant.findUnique({ where: { userId } });
+    if (!restaurant) {
+      return res.status(403).json({ success: false, error: 'Unauthorized' });
+    }
+
+    // Verify the menu item belongs to this restaurant
+    const existingItem = await prisma.menuItem.findFirst({
+      where: {
+        id: parseInt(id),
+        restaurantId: restaurant.id
+      }
+    });
+
+    if (!existingItem) {
+      return res.status(404).json({ success: false, error: 'Menu item not found' });
+    }
+
+    const updatedItem = await prisma.menuItem.update({
+      where: { id: parseInt(id) },
+      data: {
+        available: !existingItem.available
+      }
+    });
+
+    res.json({
+      success: true,
+      available: updatedItem.available,
+      message: `${updatedItem.name} is now ${updatedItem.available ? 'Available' : 'Sold Out'}`
+    });
+  } catch (error) {
+    console.error('Toggle availability error:', error);
+    res.status(500).json({ success: false, error: 'Failed to toggle availability' });
+  }
+};
+
 // API endpoint to get menu items by IDs
 export const getMenuItemsByIds = async (req, res) => {
   try {

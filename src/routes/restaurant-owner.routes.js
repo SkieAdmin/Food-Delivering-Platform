@@ -6,7 +6,14 @@ import { body } from 'express-validator';
 import { isAuthenticated, hasRole } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validation.middleware.js';
 import { showSetup, setupRestaurant } from '../controllers/restaurant.controller.js';
-import { showMenuManager, showNewMenuItem, createMenuItem } from '../controllers/restaurant.controller.js';
+import {
+  showMenuManager,
+  showNewMenuItem,
+  createMenuItem,
+  updateMenuItem,
+  deleteMenuItem,
+  toggleAvailability
+} from '../controllers/restaurant.controller.js';
 
 const router = express.Router();
 
@@ -64,5 +71,27 @@ router.post(
   validate,
   createMenuItem
 );
+
+// Update menu item
+router.post(
+  '/menu/:id/update',
+  isAuthenticated,
+  hasRole('RESTAURANT'),
+  upload.single('imageFile'),
+  [
+    body('name').trim().notEmpty().withMessage('Name is required'),
+    body('description').trim().notEmpty().withMessage('Description is required'),
+    body('price').isFloat({ gt: 0 }).withMessage('Price must be greater than 0'),
+    body('category').trim().notEmpty().withMessage('Category is required'),
+  ],
+  validate,
+  updateMenuItem
+);
+
+// Delete menu item
+router.post('/menu/:id/delete', isAuthenticated, hasRole('RESTAURANT'), deleteMenuItem);
+
+// Toggle availability (AJAX endpoint)
+router.post('/menu/:id/toggle', isAuthenticated, hasRole('RESTAURANT'), toggleAvailability);
 
 export default router;

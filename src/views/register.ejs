@@ -7,109 +7,272 @@
   <link rel="stylesheet" href="/css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
-<body>
-  <%- include('partials/header') %>
+<body class="auth-page">
+  <!-- Back to Home Button -->
+  <a href="/" class="auth-back-btn">
+    <span class="back-icon">←</span>
+    <span class="back-text">Back to Home</span>
+  </a>
 
-  <div class="container" style="max-width: 500px; margin-top: 3rem;">
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title text-center">Create Account</h2>
+  <div class="auth-container">
+    <!-- Left Side - Welcome Section -->
+    <div class="auth-welcome-section auth-welcome-register">
+      <div class="auth-welcome-content">
+        <div class="welcome-icon">✨</div>
+        <h1 class="welcome-title">Join GoCotano Today</h1>
+        <p class="welcome-subtitle">
+          Start your food delivery journey with us
+        </p>
+        <div class="welcome-features">
+          <div class="welcome-feature">
+            <span class="feature-icon-auth">🎉</span>
+            <span>Easy Setup</span>
+          </div>
+          <div class="welcome-feature">
+            <span class="feature-icon-auth">💰</span>
+            <span>Great Deals</span>
+          </div>
+          <div class="welcome-feature">
+            <span class="feature-icon-auth">⭐</span>
+            <span>Premium Service</span>
+          </div>
+        </div>
+        <div class="welcome-benefits">
+          <h3 class="benefits-title">Why Join Us?</h3>
+          <ul class="benefits-list">
+            <li>✓ Access to 200+ restaurants</li>
+            <li>✓ Real-time order tracking</li>
+            <li>✓ Exclusive discounts & offers</li>
+            <li>✓ Secure payment options</li>
+            <li>✓ 24/7 customer support</li>
+          </ul>
+        </div>
       </div>
-      <div class="card-body">
+      <div class="auth-welcome-overlay"></div>
+    </div>
+
+    <!-- Right Side - Register Form -->
+    <div class="auth-form-section">
+      <div class="auth-form-container auth-form-scrollable">
+        <div class="auth-form-header">
+          <h2 class="auth-title">Create Account</h2>
+          <p class="auth-subtitle">Fill in your details to get started</p>
+        </div>
+
         <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
-          <div class="alert alert-error"><%= error %></div>
+          <div class="alert-modern alert-error-modern">
+            <span class="alert-icon">⚠️</span>
+            <span class="alert-message"><%= error %></span>
+          </div>
         <% } %>
 
         <% if (typeof success !== 'undefined' && success && success.length > 0) { %>
-          <div class="alert alert-success"><%= success %></div>
+          <div class="alert-modern alert-success-modern">
+            <span class="alert-icon">✓</span>
+            <span class="alert-message"><%= success %></span>
+          </div>
         <% } %>
 
-        <form action="/register" method="POST">
-          <div class="form-group">
-            <label for="firstName" class="form-label">First Name</label>
-            <input
-              type="text"
-              id="firstName"
-              name="firstName"
-              class="form-control"
-              required
-              placeholder="Juan"
-            >
+        <form action="/register" method="POST" class="auth-form">
+          <!-- Role Selection Cards -->
+          <div class="form-group-modern">
+            <label class="form-label-modern">I want to register as</label>
+            <div class="role-selection-cards">
+              <input type="radio" name="role" value="CUSTOMER" id="role-customer" checked>
+              <label for="role-customer" class="role-card">
+                <span class="role-icon">👤</span>
+                <span class="role-name">Customer</span>
+                <span class="role-desc">Order food</span>
+              </label>
+
+              <input type="radio" name="role" value="RESTAURANT" id="role-restaurant">
+              <label for="role-restaurant" class="role-card">
+                <span class="role-icon">🏪</span>
+                <span class="role-name">Restaurant</span>
+                <span class="role-desc">Sell food</span>
+              </label>
+
+              <input type="radio" name="role" value="DRIVER" id="role-driver">
+              <label for="role-driver" class="role-card">
+                <span class="role-icon">🚗</span>
+                <span class="role-name">Driver</span>
+                <span class="role-desc">Deliver food</span>
+              </label>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="lastName" class="form-label">Last Name</label>
-            <input
-              type="text"
-              id="lastName"
-              name="lastName"
-              class="form-control"
-              required
-              placeholder="Dela Cruz"
-            >
-          </div>
-          <div class="form-group">
-            <label for="email" class="form-label">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              class="form-control"
-              required
-              placeholder="your@email.com"
-            >
+          <div class="form-row">
+            <div class="form-group-modern form-group-half">
+              <label for="firstName" class="form-label-modern">First Name</label>
+              <div class="input-with-icon">
+                <span class="input-icon">👤</span>
+                <input
+                  type="text"
+                  id="firstName"
+                  name="firstName"
+                  class="form-control-modern"
+                  required
+                  placeholder="Juan"
+                  autocomplete="given-name"
+                >
+              </div>
+            </div>
+
+            <div class="form-group-modern form-group-half">
+              <label for="lastName" class="form-label-modern">Last Name</label>
+              <div class="input-with-icon">
+                <span class="input-icon">👤</span>
+                <input
+                  type="text"
+                  id="lastName"
+                  name="lastName"
+                  class="form-control-modern"
+                  required
+                  placeholder="Dela Cruz"
+                  autocomplete="family-name"
+                >
+              </div>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="phone" class="form-label">Phone Number</label>
-            <input
-              type="tel"
-              id="phone"
-              name="phone"
-              class="form-control"
-              required
-              placeholder="+1234567890"
-            >
-            <small style="color: var(--gray); font-size: 0.875rem;">
-              Include country code (e.g., +1 for US)
-            </small>
+          <div class="form-group-modern">
+            <label for="email" class="form-label-modern">Email Address</label>
+            <div class="input-with-icon">
+              <span class="input-icon">📧</span>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                class="form-control-modern"
+                required
+                placeholder="your@email.com"
+                autocomplete="email"
+              >
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="password" class="form-label">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              class="form-control"
-              required
-              minlength="6"
-              placeholder="Minimum 6 characters"
-            >
+          <div class="form-group-modern">
+            <label for="phone" class="form-label-modern">Phone Number</label>
+            <div class="input-with-icon">
+              <span class="input-icon">📱</span>
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                class="form-control-modern"
+                required
+                placeholder="+63 123 456 7890"
+                autocomplete="tel"
+              >
+            </div>
+            <small class="input-hint">Include country code (e.g., +63 for Philippines)</small>
           </div>
 
-          <div class="form-group">
-            <label for="role" class="form-label">Register As</label>
-            <select id="role" name="role" class="form-select">
-              <option value="CUSTOMER">Customer</option>
-              <option value="RESTAURANT">Restaurant Owner</option>
-              <option value="DRIVER">Delivery Driver</option>
-            </select>
+          <div class="form-group-modern">
+            <label for="password" class="form-label-modern">Password</label>
+            <div class="input-with-icon">
+              <span class="input-icon">🔒</span>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                class="form-control-modern"
+                required
+                minlength="6"
+                placeholder="Minimum 6 characters"
+                autocomplete="new-password"
+              >
+              <button type="button" class="password-toggle" onclick="togglePasswordRegister('password')">
+                <span id="password-toggle-icon">👁️</span>
+              </button>
+            </div>
+            <div class="password-strength" id="password-strength">
+              <div class="strength-bar">
+                <div class="strength-fill" id="strength-fill"></div>
+              </div>
+              <span class="strength-text" id="strength-text">Password strength</span>
+            </div>
           </div>
 
-          <button type="submit" class="btn btn-primary w-100" style="margin-top: 1rem;">
-            Sign Up
+          <div class="form-group-modern">
+            <label class="checkbox-container checkbox-modern">
+              <input type="checkbox" name="terms" id="terms" required>
+              <span class="checkbox-label">
+                I agree to the <a href="/terms" class="terms-link">Terms of Service</a> and
+                <a href="/privacy" class="terms-link">Privacy Policy</a>
+              </span>
+            </label>
+          </div>
+
+          <button type="submit" class="btn-auth-primary">
+            <span>Create Account</span>
+            <span class="btn-arrow-auth">→</span>
           </button>
         </form>
 
-        <p class="text-center" style="margin-top: 1.5rem; color: var(--gray);">
+        <p class="auth-footer-text">
           Already have an account?
-          <a href="/login" style="color: var(--primary-orange); font-weight: 600;">Login</a>
+          <a href="/login" class="auth-link">Sign In</a>
         </p>
       </div>
     </div>
   </div>
 
-  <%- include('partials/footer') %>
+  <script>
+    function togglePasswordRegister(inputId) {
+      const input = document.getElementById(inputId);
+      const icon = document.getElementById(inputId + '-toggle-icon');
+
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.textContent = '🙈';
+      } else {
+        input.type = 'password';
+        icon.textContent = '👁️';
+      }
+    }
+
+    // Password strength indicator
+    const passwordInput = document.getElementById('password');
+    const strengthFill = document.getElementById('strength-fill');
+    const strengthText = document.getElementById('strength-text');
+
+    passwordInput.addEventListener('input', function() {
+      const value = this.value;
+      let strength = 0;
+
+      if (value.length >= 6) strength++;
+      if (value.length >= 10) strength++;
+      if (/[a-z]/.test(value) && /[A-Z]/.test(value)) strength++;
+      if (/\d/.test(value)) strength++;
+      if (/[^a-zA-Z\d]/.test(value)) strength++;
+
+      const percentage = (strength / 5) * 100;
+      strengthFill.style.width = percentage + '%';
+
+      if (strength <= 1) {
+        strengthFill.style.background = '#F44336';
+        strengthText.textContent = 'Weak password';
+      } else if (strength <= 3) {
+        strengthFill.style.background = '#FF9800';
+        strengthText.textContent = 'Fair password';
+      } else if (strength <= 4) {
+        strengthFill.style.background = '#4CAF50';
+        strengthText.textContent = 'Good password';
+      } else {
+        strengthFill.style.background = '#2E7D32';
+        strengthText.textContent = 'Strong password';
+      }
+    });
+
+    // Auto-hide alerts after 5 seconds
+    setTimeout(() => {
+      const alerts = document.querySelectorAll('.alert-modern');
+      alerts.forEach(alert => {
+        alert.style.opacity = '0';
+        setTimeout(() => alert.remove(), 300);
+      });
+    }, 5000);
+  </script>
 </body>
 </html>

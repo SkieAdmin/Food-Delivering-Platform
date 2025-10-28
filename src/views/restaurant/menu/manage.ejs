@@ -6,14 +6,306 @@
   <title><%= title %> | GoCotano</title>
   <link rel="stylesheet" href="/css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    .menu-table-container {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+
+    .menu-table-header {
+      background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+      color: var(--white);
+      padding: 1.5rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .menu-table-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .menu-table-wrapper {
+      padding: 0;
+      overflow-x: auto;
+    }
+
+    .menu-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .menu-table thead th {
+      background: var(--light-gray);
+      color: var(--dark-gray);
+      font-weight: 700;
+      text-align: left;
+      padding: 1rem 1.5rem;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid var(--primary-blue-lighter);
+    }
+
+    .menu-table tbody tr {
+      transition: all 0.3s ease;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .menu-table tbody tr:hover {
+      background: var(--primary-blue-lighter);
+      transform: scale(1.01);
+      box-shadow: 0 4px 15px rgba(79, 195, 247, 0.2);
+    }
+
+    .menu-table tbody td {
+      padding: 1.25rem 1.5rem;
+      vertical-align: middle;
+    }
+
+    .menu-item-image {
+      width: 60px;
+      height: 60px;
+      border-radius: var(--radius-md);
+      object-fit: cover;
+      border: 2px solid var(--primary-blue-lighter);
+    }
+
+    .menu-item-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .menu-item-details {
+      flex: 1;
+    }
+
+    .menu-item-name {
+      font-weight: 700;
+      color: var(--dark-gray);
+      font-size: 1.1rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .menu-item-desc {
+      color: var(--gray);
+      font-size: 0.9rem;
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .menu-price {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--primary-orange);
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-action {
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      text-decoration: none;
+    }
+
+    .btn-edit {
+      background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+      color: var(--white);
+    }
+
+    .btn-edit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(79, 195, 247, 0.4);
+    }
+
+    .btn-delete {
+      background: linear-gradient(135deg, #F44336 0%, #D32F2F 100%);
+      color: var(--white);
+    }
+
+    .btn-delete:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(244, 67, 54, 0.4);
+    }
+
+    .btn-toggle {
+      background: linear-gradient(135deg, var(--primary-orange) 0%, var(--primary-orange-dark) 100%);
+      color: var(--white);
+      min-width: 120px;
+      justify-content: center;
+    }
+
+    .btn-toggle:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4);
+    }
+
+    .btn-toggle.sold-out {
+      background: linear-gradient(135deg, #9E9E9E 0%, #757575 100%);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+    }
+
+    .empty-icon {
+      font-size: 5rem;
+      margin-bottom: 1rem;
+    }
+
+    .empty-title {
+      font-size: 1.5rem;
+      color: var(--dark-gray);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-text {
+      color: var(--gray);
+      font-size: 1.1rem;
+      margin-bottom: 2rem;
+    }
+
+    /* Edit Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(5px);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--white);
+      border-radius: var(--radius-xl);
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .modal-header {
+      background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+      color: var(--white);
+      padding: 1.5rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .modal-close {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: var(--white);
+      font-size: 1.5rem;
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+
+    .modal-close:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: rotate(90deg);
+    }
+
+    .modal-body {
+      padding: 2rem;
+    }
+
+    @media (max-width: 768px) {
+      .menu-table-wrapper {
+        overflow-x: scroll;
+      }
+
+      .menu-table {
+        min-width: 800px;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+      }
+
+      .btn-action {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
 </head>
 <body>
   <%- include('../../partials/header') %>
 
-  <div class="container">
-    <div class="d-flex justify-between align-center" style="margin-bottom: 1rem;">
-      <h1 style="color: var(--primary-blue);">Manage Menu - <%= restaurant.name %></h1>
-      <a href="/restaurant/menu/new" class="btn btn-primary">Add Menu Item</a>
+  <div class="container" style="margin-top: 2rem;">
+    <div class="d-flex justify-between align-center" style="margin-bottom: 2rem;">
+      <div>
+        <h1 style="color: var(--primary-blue); margin-bottom: 0.5rem;">Manage Menu</h1>
+        <p style="color: var(--gray); font-size: 1.1rem;"><%= restaurant.name %></p>
+      </div>
+      <a href="/restaurant/menu/new" class="btn btn-primary" style="display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 1.25rem;">+</span>
+        <span>Add Menu Item</span>
+      </a>
     </div>
 
     <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
@@ -23,51 +315,282 @@
       <div class="alert alert-success"><%= success %></div>
     <% } %>
 
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title">Your Menu Items</h2>
+    <div class="menu-table-container">
+      <div class="menu-table-header">
+        <h2 class="menu-table-title">📋 Your Menu Items (<%= items.length %>)</h2>
       </div>
-      <div class="card-body">
-        <% if (items && items.length) { %>
-          <table class="table" style="width:100%">
+
+      <% if (items && items.length) { %>
+        <div class="menu-table-wrapper">
+          <table class="menu-table">
             <thead>
               <tr>
-                <th>Name</th>
+                <th>Item</th>
                 <th>Category</th>
                 <th>Price</th>
                 <th>Flags</th>
                 <th>Status</th>
+                <th style="text-align: center;">Actions</th>
               </tr>
             </thead>
             <tbody>
               <% items.forEach(item => { %>
-                <tr>
-                  <td><strong><%= item.name %></strong></td>
-                  <td><%= item.category %></td>
-                  <td>$<%= item.price.toFixed(2) %></td>
+                <tr data-item-id="<%= item.id %>">
                   <td>
-                    <% if (item.isSpicy) { %><span class="badge badge-pending">Spicy</span><% } %>
-                    <% if (item.isVegetarian) { %><span class="badge badge-primary">Veg</span><% } %>
+                    <div class="menu-item-info">
+                      <% if (item.image) { %>
+                        <img src="<%= item.image %>" alt="<%= item.name %>" class="menu-item-image" onerror="this.style.display='none'">
+                      <% } else { %>
+                        <div class="menu-item-image" style="background: linear-gradient(135deg, var(--primary-blue-lighter), var(--primary-orange-lighter)); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">🍽️</div>
+                      <% } %>
+                      <div class="menu-item-details">
+                        <div class="menu-item-name"><%= item.name %></div>
+                        <div class="menu-item-desc"><%= item.description %></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="badge badge-secondary"><%= item.category %></span></td>
+                  <td><span class="menu-price">₱<%= item.price.toFixed(2) %></span></td>
+                  <td>
+                    <% if (item.isSpicy) { %><span class="badge badge-pending" style="margin-right: 0.25rem;">🌶️ Spicy</span><% } %>
+                    <% if (item.isVegetarian) { %><span class="badge badge-success">🥗 Veg</span><% } %>
+                    <% if (!item.isSpicy && !item.isVegetarian) { %><span style="color: var(--gray);">—</span><% } %>
                   </td>
                   <td>
-                    <span class="badge <%= item.available ? 'badge-success' : 'badge-pending' %>">
-                      <%= item.available ? 'Available' : 'Unavailable' %>
-                    </span>
+                    <button
+                      class="btn-toggle <%= item.available ? '' : 'sold-out' %>"
+                      onclick="toggleAvailability(<%= item.id %>, this)"
+                      data-available="<%= item.available %>"
+                    >
+                      <span><%= item.available ? '✓ Available' : '✕ Sold Out' %></span>
+                    </button>
+                  </td>
+                  <td>
+                    <div class="action-buttons">
+                      <button class="btn-action btn-edit" onclick="openEditModal(<%= item.id %>)">
+                        <span>✏️</span>
+                        <span>Edit</span>
+                      </button>
+                      <button class="btn-action btn-delete" onclick="deleteMenuItem(<%= item.id %>, '<%= item.name %>')">
+                        <span>🗑️</span>
+                        <span>Delete</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               <% }) %>
             </tbody>
           </table>
-        <% } else { %>
-          <p style="color: var(--gray);">No items yet. Click "Add Menu Item" to create your first item.</p>
-        <% } %>
-      </div>
+        </div>
+      <% } else { %>
+        <div class="empty-state">
+          <div class="empty-icon">🍽️</div>
+          <h3 class="empty-title">No Menu Items Yet</h3>
+          <p class="empty-text">Start building your menu by adding your first delicious item!</p>
+          <a href="/restaurant/menu/new" class="btn btn-primary" style="font-size: 1.1rem; padding: 1rem 2rem;">
+            <span style="font-size: 1.5rem; margin-right: 0.5rem;">+</span>
+            Add Your First Item
+          </a>
+        </div>
+      <% } %>
     </div>
 
-    <p style="margin-top: 1rem;"><a class="btn btn-secondary" href="/dashboard">Back to Dashboard</a></p>
+    <p style="margin-top: 2rem;">
+      <a class="btn btn-secondary" href="/dashboard" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+        <span>←</span>
+        <span>Back to Dashboard</span>
+      </a>
+    </p>
+  </div>
+
+  <!-- Edit Modal -->
+  <div id="editModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">✏️ Edit Menu Item</h3>
+        <button class="modal-close" onclick="closeEditModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="editForm" method="POST" enctype="multipart/form-data">
+          <div class="form-group">
+            <label class="form-label">Item Name</label>
+            <input type="text" name="name" id="edit-name" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea name="description" id="edit-description" class="form-control" rows="3" required></textarea>
+          </div>
+
+          <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Price (₱)</label>
+              <input type="number" name="price" id="edit-price" class="form-control" step="0.01" min="0" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <input type="text" name="category" id="edit-category" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Image URL (optional)</label>
+            <input type="url" name="image" id="edit-image" class="form-control" placeholder="https://example.com/image.jpg">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Or Upload New Image</label>
+            <input type="file" name="imageFile" class="form-control" accept="image/*">
+          </div>
+
+          <div class="form-group" style="display: flex; gap: 2rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+              <input type="checkbox" name="isSpicy" id="edit-isSpicy" style="width: 20px; height: 20px;">
+              <span>🌶️ Spicy</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+              <input type="checkbox" name="isVegetarian" id="edit-isVegetarian" style="width: 20px; height: 20px;">
+              <span>🥗 Vegetarian</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+              <input type="checkbox" name="available" id="edit-available" style="width: 20px; height: 20px;">
+              <span>✓ Available</span>
+            </label>
+          </div>
+
+          <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" class="btn btn-primary" style="flex: 1;">Save Changes</button>
+            <button type="button" class="btn btn-secondary" onclick="closeEditModal()" style="flex: 1;">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 
   <%- include('../../partials/footer') %>
+
+  <script>
+    // Store items data for editing
+    const itemsData = <%- JSON.stringify(items) %>;
+
+    function openEditModal(itemId) {
+      const item = itemsData.find(i => i.id === itemId);
+      if (!item) return;
+
+      // Populate form
+      document.getElementById('edit-name').value = item.name;
+      document.getElementById('edit-description').value = item.description;
+      document.getElementById('edit-price').value = item.price;
+      document.getElementById('edit-category').value = item.category;
+      document.getElementById('edit-image').value = item.image || '';
+      document.getElementById('edit-isSpicy').checked = item.isSpicy;
+      document.getElementById('edit-isVegetarian').checked = item.isVegetarian;
+      document.getElementById('edit-available').checked = item.available;
+
+      // Set form action
+      document.getElementById('editForm').action = `/restaurant/menu/${itemId}/update`;
+
+      // Show modal
+      document.getElementById('editModal').classList.add('active');
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').classList.remove('active');
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('editModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeEditModal();
+      }
+    });
+
+    async function toggleAvailability(itemId, button) {
+      try {
+        button.disabled = true;
+        button.style.opacity = '0.6';
+
+        const response = await fetch(`/restaurant/menu/${itemId}/toggle`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Update button
+          button.dataset.available = data.available;
+          button.innerHTML = `<span>${data.available ? '✓ Available' : '✕ Sold Out'}</span>`;
+
+          if (data.available) {
+            button.classList.remove('sold-out');
+          } else {
+            button.classList.add('sold-out');
+          }
+
+          // Show success message
+          showToast(data.message, 'success');
+        } else {
+          showToast('Failed to update status', 'error');
+        }
+      } catch (error) {
+        console.error('Toggle error:', error);
+        showToast('Failed to update status', 'error');
+      } finally {
+        button.disabled = false;
+        button.style.opacity = '1';
+      }
+    }
+
+    function deleteMenuItem(itemId, itemName) {
+      if (!confirm(`Are you sure you want to delete "${itemName}"?\n\nThis action cannot be undone.`)) {
+        return;
+      }
+
+      // Create and submit form
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = `/restaurant/menu/${itemId}/delete`;
+      document.body.appendChild(form);
+      form.submit();
+    }
+
+    function showToast(message, type) {
+      const toast = document.createElement('div');
+      toast.className = `alert alert-${type === 'success' ? 'success' : 'error'}`;
+      toast.textContent = message;
+      toast.style.position = 'fixed';
+      toast.style.top = '20px';
+      toast.style.right = '20px';
+      toast.style.zIndex = '10000';
+      toast.style.minWidth = '300px';
+      toast.style.animation = 'slideInRight 0.3s ease';
+
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+  </script>
+
+  <style>
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(100%);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+  </style>
 </body>
 </html>
 
