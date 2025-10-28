@@ -24,7 +24,7 @@
         <div class="stat-label">Active Deliveries</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value">$<%= ((stats.earnings._sum.totalAmount || 0) * 0.1).toFixed(2) %></div>
+        <div class="stat-value">₱<%= ((stats.earnings._sum.totalAmount || 0) * 0.1).toFixed(2) %></div>
         <div class="stat-label">Earnings (10%)</div>
       </div>
     </div>
@@ -41,8 +41,8 @@
               <h3 style="color: var(--primary-blue);">Order #<%= order.orderNumber %></h3>
               <p><strong>From:</strong> <%= order.restaurant.name %></p>
               <p><strong>To:</strong> <%= order.deliveryAddress %></p>
-              <p><strong>Amount:</strong> $<%= order.totalAmount.toFixed(2) %></p>
-              <button class="btn btn-primary" onclick="acceptDelivery(<%= order.id %>)">
+              <p><strong>Amount:</strong> ₱<%= order.totalAmount.toFixed(2) %></p>
+              <button class="btn btn-primary" data-action="accept" data-order-id="<%= order.id %>">
                 Accept Delivery
               </button>
             </div>
@@ -71,14 +71,14 @@
                 </div>
                 <div style="text-align: right;">
                   <div style="font-size: 1.25rem; font-weight: 700;">
-                    $<%= order.totalAmount.toFixed(2) %>
+                    ₱<%= order.totalAmount.toFixed(2) %>
                   </div>
                   <% if (order.status === 'READY') { %>
-                    <button class="btn btn-primary mt-2" onclick="startDelivery(<%= order.id %>)">
+                    <button class="btn btn-primary mt-2" data-action="start" data-order-id="<%= order.id %>">
                       Start Delivery
                     </button>
                   <% } else if (order.status === 'OUT_FOR_DELIVERY') { %>
-                    <button class="btn btn-primary mt-2" onclick="completeDelivery(<%= order.id %>)">
+                    <button class="btn btn-primary mt-2" data-action="complete" data-order-id="<%= order.id %>">
                       Complete
                     </button>
                   <% } %>
@@ -98,38 +98,157 @@
   <%- include('../partials/footer') %>
 
   <script>
-    function acceptDelivery(orderId) {
-      // In production, would call API to assign driver
-      alert('Delivery accepted! Feature to be implemented.');
-    }
+    // Event delegation for all button clicks
+    document.addEventListener('DOMContentLoaded', function() {
+      document.body.addEventListener('click', function(e) {
+        const button = e.target.closest('[data-action]');
+        if (!button) return;
 
-    function startDelivery(orderId) {
-      fetch('/orders/update-status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, status: 'OUT_FOR_DELIVERY' })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          location.reload();
+        const action = button.dataset.action;
+        const orderId = parseInt(button.dataset.orderId);
+
+        if (action === 'accept') {
+          acceptDelivery(orderId, button);
+        } else if (action === 'start') {
+          startDelivery(orderId, button);
+        } else if (action === 'complete') {
+          completeDelivery(orderId, button);
         }
       });
+    });
+
+    async function acceptDelivery(orderId, button) {
+      if (!confirm('Accept this delivery?')) {
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = 'Accepting...';
+
+      try {
+        const response = await fetch('/driver/accept-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showToast('Delivery accepted! You can now start the delivery.', 'success');
+          setTimeout(() => location.reload(), 1500);
+        } else {
+          showToast(data.error || 'Failed to accept delivery', 'error');
+          button.disabled = false;
+          button.textContent = 'Accept Delivery';
+        }
+      } catch (error) {
+        console.error('Accept delivery error:', error);
+        showToast('Failed to accept delivery. Please try again.', 'error');
+        button.disabled = false;
+        button.textContent = 'Accept Delivery';
+      }
     }
 
-    function completeDelivery(orderId) {
-      fetch('/orders/update-status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, status: 'DELIVERED' })
-      })
-      .then(res => res.json())
-      .then(data => {
+    async function startDelivery(orderId, button) {
+      if (!confirm('Start this delivery?')) {
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = 'Starting...';
+
+      try {
+        const response = await fetch('/orders/update-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId, status: 'OUT_FOR_DELIVERY' })
+        });
+
+        const data = await response.json();
+
         if (data.success) {
-          location.reload();
+          showToast('Delivery started!', 'success');
+          setTimeout(() => location.reload(), 1500);
+        } else {
+          showToast('Failed to start delivery', 'error');
+          button.disabled = false;
+          button.textContent = 'Start Delivery';
         }
-      });
+      } catch (error) {
+        console.error('Start delivery error:', error);
+        showToast('Failed to start delivery. Please try again.', 'error');
+        button.disabled = false;
+        button.textContent = 'Start Delivery';
+      }
+    }
+
+    async function completeDelivery(orderId, button) {
+      if (!confirm('Mark this delivery as completed?')) {
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = 'Completing...';
+
+      try {
+        const response = await fetch('/driver/complete-delivery', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showToast('Delivery completed! Earnings updated.', 'success');
+          setTimeout(() => location.reload(), 1500);
+        } else {
+          showToast('Failed to complete delivery', 'error');
+          button.disabled = false;
+          button.textContent = 'Complete';
+        }
+      } catch (error) {
+        console.error('Complete delivery error:', error);
+        showToast('Failed to complete delivery. Please try again.', 'error');
+        button.disabled = false;
+        button.textContent = 'Complete';
+      }
+    }
+
+    function showToast(message, type) {
+      const toast = document.createElement('div');
+      toast.className = `alert alert-${type === 'success' ? 'success' : 'error'}`;
+      toast.textContent = message;
+      toast.style.position = 'fixed';
+      toast.style.top = '20px';
+      toast.style.right = '20px';
+      toast.style.zIndex = '10000';
+      toast.style.minWidth = '300px';
+      toast.style.animation = 'slideInRight 0.3s ease';
+
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
     }
   </script>
+
+  <style>
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(100%);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+  </style>
 </body>
 </html>

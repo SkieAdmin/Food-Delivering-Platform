@@ -358,8 +358,9 @@
                   </td>
                   <td>
                     <button
-                      class="btn-toggle <%= item.available ? '' : 'sold-out' %>"
-                      onclick="toggleAvailability(<%= item.id %>, this)"
+                      class="btn-action btn-toggle <%= item.available ? '' : 'sold-out' %>"
+                      data-item-id="<%= item.id %>"
+                      data-action="toggle"
                       data-available="<%= item.available %>"
                     >
                       <span><%= item.available ? '✓ Available' : '✕ Sold Out' %></span>
@@ -367,11 +368,11 @@
                   </td>
                   <td>
                     <div class="action-buttons">
-                      <button class="btn-action btn-edit" onclick="openEditModal(<%= item.id %>)">
+                      <button class="btn-action btn-edit" data-item-id="<%= item.id %>" data-action="edit">
                         <span>✏️</span>
                         <span>Edit</span>
                       </button>
-                      <button class="btn-action btn-delete" onclick="deleteMenuItem(<%= item.id %>, '<%= item.name %>')">
+                      <button class="btn-action btn-delete" data-item-id="<%= item.id %>" data-item-name="<%= item.name %>" data-action="delete">
                         <span>🗑️</span>
                         <span>Delete</span>
                       </button>
@@ -408,7 +409,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h3 class="modal-title">✏️ Edit Menu Item</h3>
-        <button class="modal-close" onclick="closeEditModal()">×</button>
+        <button class="modal-close">×</button>
       </div>
       <div class="modal-body">
         <form id="editForm" method="POST" enctype="multipart/form-data">
@@ -460,7 +461,7 @@
 
           <div style="display: flex; gap: 1rem; margin-top: 2rem;">
             <button type="submit" class="btn btn-primary" style="flex: 1;">Save Changes</button>
-            <button type="button" class="btn btn-secondary" onclick="closeEditModal()" style="flex: 1;">Cancel</button>
+            <button type="button" class="btn btn-secondary modal-close" style="flex: 1;">Cancel</button>
           </div>
         </form>
       </div>
@@ -473,9 +474,49 @@
     // Store items data for editing
     const itemsData = <%- JSON.stringify(items) %>;
 
+    // Wait for DOM to be ready
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('Menu manager initialized with', itemsData.length, 'items');
+
+      // Event delegation for all button clicks
+      document.body.addEventListener('click', function(e) {
+        const button = e.target.closest('[data-action]');
+        if (!button) return;
+
+        const action = button.dataset.action;
+        const itemId = parseInt(button.dataset.itemId);
+
+        if (action === 'edit') {
+          openEditModal(itemId);
+        } else if (action === 'delete') {
+          const itemName = button.dataset.itemName;
+          deleteMenuItem(itemId, itemName);
+        } else if (action === 'toggle') {
+          toggleAvailability(itemId, button);
+        }
+      });
+
+      // Close modal when clicking outside
+      document.getElementById('editModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+          closeEditModal();
+        }
+      });
+
+      // Close modal button
+      const closeButtons = document.querySelectorAll('.modal-close');
+      closeButtons.forEach(btn => {
+        btn.addEventListener('click', closeEditModal);
+      });
+    });
+
     function openEditModal(itemId) {
+      console.log('Opening edit modal for item:', itemId);
       const item = itemsData.find(i => i.id === itemId);
-      if (!item) return;
+      if (!item) {
+        console.error('Item not found:', itemId);
+        return;
+      }
 
       // Populate form
       document.getElementById('edit-name').value = item.name;
@@ -498,14 +539,8 @@
       document.getElementById('editModal').classList.remove('active');
     }
 
-    // Close modal when clicking outside
-    document.getElementById('editModal').addEventListener('click', function(e) {
-      if (e.target === this) {
-        closeEditModal();
-      }
-    });
-
     async function toggleAvailability(itemId, button) {
+      console.log('Toggling availability for item:', itemId);
       try {
         button.disabled = true;
         button.style.opacity = '0.6';
@@ -545,6 +580,7 @@
     }
 
     function deleteMenuItem(itemId, itemName) {
+      console.log('Deleting menu item:', itemId, itemName);
       if (!confirm(`Are you sure you want to delete "${itemName}"?\n\nThis action cannot be undone.`)) {
         return;
       }

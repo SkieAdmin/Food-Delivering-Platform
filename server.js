@@ -14,6 +14,7 @@ import homeRoutes from './src/routes/home.routes.js';
 import authRoutes from './src/routes/auth.routes.js';
 import restaurantRoutes from './src/routes/restaurant.routes.js';
 import restaurantOwnerRoutes from './src/routes/restaurant-owner.routes.js';
+import driverRoutes from './src/routes/driver.routes.js';
 import orderRoutes from './src/routes/order.routes.js';
 import dashboardRoutes from './src/routes/dashboard.routes.js';
 import orderProcessorRoutes from './src/routes/order-processor.routes.js';
@@ -31,6 +32,7 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'", "https://unpkg.com", "https://www.paypal.com", "https://www.paypalobjects.com"],
+      scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
@@ -83,6 +85,7 @@ app.use('/', homeRoutes);
 app.use('/', authRoutes); // Rate limiter removed for development
 app.use('/restaurants', restaurantRoutes);
 app.use('/restaurant', restaurantOwnerRoutes);
+app.use('/driver', driverRoutes);
 app.use('/orders', orderRoutes);
 app.use('/dashboard', dashboardRoutes);
 

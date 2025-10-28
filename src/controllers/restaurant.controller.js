@@ -241,6 +241,7 @@ export const createMenuItem = async (req, res) => {
 
 // Restaurant Owner: Update menu item
 export const updateMenuItem = async (req, res) => {
+  console.log('Updating menu item:', req.params.id);
   try {
     const userId = req.session.userId;
     const { id } = req.params;
@@ -348,6 +349,7 @@ export const deleteMenuItem = async (req, res) => {
 
 // Restaurant Owner: Toggle menu item availability (AJAX)
 export const toggleAvailability = async (req, res) => {
+  console.log('Toggling availability for item:', req.params.id);
   try {
     const userId = req.session.userId;
     const { id } = req.params;

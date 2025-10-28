@@ -5,7 +5,7 @@ import { sendOrderConfirmation, sendOrderStatusUpdate } from '../services/sms.se
 
 export const createOrder = async (req, res) => {
   try {
-    const { restaurantId, items, deliveryAddress, deliveryLat, deliveryLng } = req.body;
+    const { restaurantId, items, deliveryAddress, deliveryLat, deliveryLng, deliveryCity, contactNumber, paymentMethod } = req.body;
     const userId = req.session.userId;
 
     console.log('=== CREATE ORDER DEBUG ===');
@@ -26,8 +26,22 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Cart is empty' });
     }
 
-    // Calculate total amount
-    let totalAmount = 0;
+    // Get restaurant to fetch delivery fee
+    const restaurant = await prisma.restaurant.findUnique({
+      where: { id: parseInt(restaurantId) }
+    });
+
+    if (!restaurant) {
+      return res.status(404).json({ success: false, error: 'Restaurant not found' });
+    }
+
+    // Get user for contact number fallback
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    // Calculate subtotal
+    let subtotal = 0;
     const orderItems = [];
 
     for (const item of items) {
@@ -36,17 +50,27 @@ export const createOrder = async (req, res) => {
       });
 
       if (menuItem) {
-        totalAmount += menuItem.price * item.quantity;
+        const itemSubtotal = menuItem.price * item.quantity;
+        subtotal += itemSubtotal;
         orderItems.push({
           menuItemId: item.menuItemId,
           quantity: item.quantity,
-          price: menuItem.price
+          price: menuItem.price,
+          subtotal: itemSubtotal
         });
       } else {
         console.error(`ERROR: Menu item ${item.menuItemId} not found`);
       }
     }
 
+    // Calculate fees
+    const deliveryFee = restaurant.deliveryFee || 50;
+    const platformFee = subtotal * 0.15; // 15% platform fee
+    const totalAmount = subtotal + deliveryFee;
+
+    console.log('Subtotal:', subtotal);
+    console.log('Delivery Fee:', deliveryFee);
+    console.log('Platform Fee:', platformFee);
     console.log('Total amount:', totalAmount);
     console.log('Order items count:', orderItems.length);
 
@@ -56,10 +80,16 @@ export const createOrder = async (req, res) => {
         orderNumber: generateOrderNumber(),
         customerId: userId,
         restaurantId: parseInt(restaurantId),
+        subtotal,
+        deliveryFee,
+        platformFee,
         totalAmount,
         deliveryAddress,
+        deliveryCity: deliveryCity || restaurant.city,
         deliveryLat: parseFloat(deliveryLat),
         deliveryLng: parseFloat(deliveryLng),
+        contactNumber: contactNumber || user.phone,
+        paymentMethod: paymentMethod || 'CASH_ON_DELIVERY',
         orderItems: {
           create: orderItems
         }
