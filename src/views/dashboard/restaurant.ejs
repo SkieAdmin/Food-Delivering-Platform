@@ -32,7 +32,7 @@
         <div class="stat-label">Pending Orders</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value">$<%= (stats.totalRevenue._sum.totalAmount || 0).toFixed(2) %></div>
+        <div class="stat-value">₱<%= (stats.totalRevenue._sum.totalAmount || 0).toFixed(2) %></div>
         <div class="stat-label">Total Revenue</div>
       </div>
       <div class="stat-card">
@@ -59,7 +59,7 @@
                 </div>
                 <div style="text-align: right;">
                   <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary-orange);">
-                    $<%= order.totalAmount.toFixed(2) %>
+                    ₱<%= order.totalAmount.toFixed(2) %>
                   </div>
                   <span class="badge badge-<%= order.status === 'PENDING' ? 'pending' : 'primary' %>">
                     <%= order.status %>

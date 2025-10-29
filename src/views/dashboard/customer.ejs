@@ -63,7 +63,7 @@
                     <td style="padding: 1rem;"><%= order.restaurant.name %></td>
                     <td style="padding: 1rem;"><%= order._count.orderItems %> items</td>
                     <td style="padding: 1rem; font-weight: 600; color: var(--primary-orange);">
-                      $<%= order.totalAmount.toFixed(2) %>
+                      ₱<%= order.totalAmount.toFixed(2) %>
                     </td>
                     <td style="padding: 1rem;">
                       <span class="badge badge-<%= order.status === 'DELIVERED' ? 'success' : 'primary' %>">
