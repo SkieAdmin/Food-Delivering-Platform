@@ -42,12 +42,6 @@ app.use(helmet({
   }
 }));
 
-// Rate limiting disabled for development/school project
-// const authLimiter = rateLimit({
-//   windowMs: 15 * 60 * 1000, // 15 minutes
-//   max: 5, // 5 requests per window
-//   message: 'Too many attempts, please try again later'
-// });
 
 // Middleware
 app.use(express.json());
